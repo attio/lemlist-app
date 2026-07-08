@@ -1,0 +1,8 @@
+query GetPersonSummary($recordId: String!) {
+  person(id: $recordId) {
+    email_addresses
+    name {
+      full_name
+    }
+  }
+}
