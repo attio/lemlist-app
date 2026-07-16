@@ -74,13 +74,13 @@ export async function executeEnrichment({
 }: {
     enrichInput: EnrichContactInput
     enrichOptions: EnrichContactOptions
-    metadata: {uniqueExecutionId: string; resumeCallbackUrl: string}
+    metadata: {uniqueExecutionId: string; finishCallbackUrl: string}
     logger?: Logger
 }): AsyncResult<string, LemlistApiError> {
-    const {uniqueExecutionId, resumeCallbackUrl} = metadata
+    const {uniqueExecutionId, finishCallbackUrl} = metadata
 
     const webhookResult = await createStoredWebhook({
-        targetUrl: resumeCallbackUrl,
+        targetUrl: finishCallbackUrl,
         uniqueExecutionId,
         type: "enrichmentDone",
         logger,

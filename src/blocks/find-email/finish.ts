@@ -2,7 +2,6 @@ import {Workflows} from "attio/server"
 import {handleEnrichmentWebhook} from "../../utils/enrichment-execution"
 import {clearStoredExecution} from "../../utils/enrichment-storage"
 import {createLogger} from "../../utils/logger"
-import {parseEmailAddress} from "../../utils/parse-email-address"
 import block from "./block"
 
 const logger = createLogger("FindEmail step - finish")
@@ -21,13 +20,13 @@ export default Workflows.defineWorkflowBlockFinish(block, async (req, {metadata}
     }
 
     const rawEmail = result.value.data.data?.email?.email
-    const parsed = rawEmail ? parseEmailAddress(rawEmail) : null
+    const email = rawEmail ? Workflows.OutcomeValue.emailAddress(rawEmail) : null
 
-    if (parsed) {
+    if (email) {
         return {
             type: "outcome",
             id: "found",
-            data: {email: Workflows.emailAddressValue(parsed)},
+            data: {email},
         }
     }
 

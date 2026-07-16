@@ -1,7 +1,6 @@
 import {Workflows} from "attio/server"
 import {LemlistActivityPayloadSchema} from "../../lemlist-api/schemas"
 import {createLogger} from "../../utils/logger"
-import {parseEmailAddress} from "../../utils/parse-email-address"
 import block from "./block"
 
 const logger = createLogger("lemlistActivity trigger - trigger")
@@ -46,13 +45,13 @@ export default Workflows.defineWorkflowBlockTrigger(block, async (req, {config, 
 
     logger.log("Received matching webhook", {uniqueActivationId, eventType: data.type})
 
-    const parsedLeadEmail = data.leadEmail ? parseEmailAddress(data.leadEmail) : null
+    const leadEmail = data.leadEmail ? Workflows.OutcomeValue.emailAddress(data.leadEmail) : null
 
     const baseData = {
         campaign_id: data.campaignId ?? "",
         campaign_name: data.campaignName ?? "",
         lead_id: data.leadId ?? "",
-        lead_email: parsedLeadEmail ? Workflows.emailAddressValue(parsedLeadEmail) : undefined,
+        lead_email: leadEmail ?? undefined,
         lead_first_name: data.leadFirstName ?? "",
         lead_last_name: data.leadLastName ?? "",
     }

@@ -22,5 +22,10 @@ export default Workflows.defineWorkflowBlockFinish(block, async (req, {metadata}
 
     const phone = result.value.data.data?.phone?.phone?.trim()
     if (!phone) return {type: "outcome", id: "not_found", data: null}
-    return {type: "outcome", id: "found", data: {phone_number: phone}}
+
+    const phoneNumber = Workflows.OutcomeValue.phoneNumber(phone)
+
+    if (!phoneNumber) return {type: "outcome", id: "not_found", data: null}
+
+    return {type: "outcome", id: "found", data: {phone_number: phoneNumber}}
 })
