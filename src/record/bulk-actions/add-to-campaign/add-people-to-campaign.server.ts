@@ -20,6 +20,9 @@ function assertNever(_value: never): void {}
  * payload — including Attio custom attributes — is built on the backend and never exposed to the
  * client, exactly like the single-record action.
  *
+ * `contactOwner` must already be a validated Lemlist user ID, or `null` when unset
+ * (see {@link resolveContactOwnerServer}) — Lemlist silently ignores invalid owners.
+ *
  * Each record is reported individually: records that no longer exist in Attio are `skipped_not_found`
  * and records without an email address are `skipped_no_email`, so the caller can summarise them
  * separately from genuine errors. If the batch can't be loaded at all, every record is reported as an
@@ -28,11 +31,12 @@ function assertNever(_value: never): void {}
 export default async function addPeopleToCampaign({
     recordIds,
     campaignId,
-    contactOwnerEmail,
+    contactOwner,
 }: {
     recordIds: string[]
     campaignId: string
-    contactOwnerEmail: string | null
+    /** Pre-resolved Lemlist user ID, or `null` when no owner should be set. */
+    contactOwner: string | null
 }): Promise<BulkAddOutcome[]> {
     const loadResult = await loadPeopleForCampaign(recordIds)
     if (isErrored(loadResult)) {
@@ -66,7 +70,7 @@ export default async function addPeopleToCampaign({
         const result = await createLeadInCampaign({
             campaignId,
             person,
-            contactOwnerEmail,
+            contactOwner,
             addLeadQueryParams,
         })
 

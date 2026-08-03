@@ -1,17 +1,15 @@
 import {beforeEach, describe, expect, it, vi} from "vitest"
 import type {LemlistApiMocks} from "../../test/utils/create-lemlist-api-mocks"
 
-const lemlistApiMocks = vi.hoisted(
-    (): LemlistApiMocks => ({
-        mockLemlistGet: vi.fn(),
-        mockLemlistPost: vi.fn(),
-        mockUpsertContact: vi.fn(),
-        mockLogger: {
-            log: vi.fn(),
-            error: vi.fn(),
-        },
-    })
-)
+const lemlistApiMocks = vi.hoisted((): LemlistApiMocks => ({
+    mockLemlistGet: vi.fn(),
+    mockLemlistPost: vi.fn(),
+    mockUpsertContact: vi.fn(),
+    mockLogger: {
+        log: vi.fn(),
+        error: vi.fn(),
+    },
+}))
 
 vi.mock("./client", () => ({
     lemlistApi: {

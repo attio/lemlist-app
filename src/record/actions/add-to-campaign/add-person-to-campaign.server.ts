@@ -1,5 +1,6 @@
-import {type AsyncResult, errored, isErrored} from "@attio/fetchable"
+import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
 import {createLeadInCampaign, getAddLeadQueryParams} from "../../../lemlist-api/campaigns"
+import {resolveContactOwner} from "../../../lemlist-api/resolve-contact-owner"
 import type {LemlistCreateLeadResponse} from "../../../lemlist-api/schemas"
 import {createLogger} from "../../../utils/logger"
 import {addPersonToCampaignErrorMessage} from "./errors"
@@ -13,15 +14,30 @@ const logger = createLogger("add-person-to-campaign")
  */
 export type AddPersonToCampaignError = {errorMessage: string}
 
+export type AddPersonToCampaignSuccess = {
+    lead: LemlistCreateLeadResponse
+    /** Set when the requested owner couldn't be matched and ownership fell back to the admin. */
+    ownerWarning: string | null
+}
+
 export default async function addPersonToCampaign({
     campaignId,
     recordId,
-    contactOwnerEmail,
+    contactOwner,
 }: {
     campaignId: string
     recordId: string
-    contactOwnerEmail: string | null
-}): AsyncResult<LemlistCreateLeadResponse, AddPersonToCampaignError> {
+    /**
+     * Attio user's email (or Lemlist user ID). Resolved to a Lemlist user ID before create.
+     * Unset/empty (or unmatched) falls back to `null` (Lemlist assigns the API-key owner).
+     */
+    contactOwner: string | null
+}): AsyncResult<AddPersonToCampaignSuccess, AddPersonToCampaignError> {
+    const ownerResult = await resolveContactOwner({owner: contactOwner})
+    if (isErrored(ownerResult)) {
+        return errored({errorMessage: ownerResult.error.errorMessage})
+    }
+
     const personResult = await loadPersonForLemlist(recordId)
     if (isErrored(personResult)) {
         return errored({errorMessage: addPersonToCampaignErrorMessage(personResult.error)})
@@ -31,7 +47,7 @@ export default async function addPersonToCampaign({
     const result = await createLeadInCampaign({
         campaignId,
         person: personResult.value,
-        contactOwnerEmail,
+        contactOwner: ownerResult.value.userId,
         addLeadQueryParams,
     })
 
@@ -40,5 +56,5 @@ export default async function addPersonToCampaign({
         return errored({errorMessage: result.error.errorMessage})
     }
 
-    return result
+    return complete({lead: result.value, ownerWarning: ownerResult.value.warning})
 }

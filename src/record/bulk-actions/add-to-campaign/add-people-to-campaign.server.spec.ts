@@ -57,7 +57,7 @@ describe("addPeopleToCampaign", () => {
         const outcomes = await addPeopleToCampaign({
             recordIds: ["ok", "no_email", "missing"],
             campaignId: "cam_1",
-            contactOwnerEmail: null,
+            contactOwner: "usr_alice",
         })
 
         expect(outcomes).toEqual([
@@ -66,6 +66,9 @@ describe("addPeopleToCampaign", () => {
             {recordId: "missing", status: "skipped_not_found"},
         ])
         expect(mockCreateLead).toHaveBeenCalledOnce()
+        expect(mockCreateLead).toHaveBeenCalledWith(
+            expect.objectContaining({contactOwner: "usr_alice"})
+        )
     })
 
     it("reports a lemlist failure as an error outcome with its message", async () => {
@@ -77,7 +80,7 @@ describe("addPeopleToCampaign", () => {
         const outcomes = await addPeopleToCampaign({
             recordIds: ["ok"],
             campaignId: "cam_1",
-            contactOwnerEmail: null,
+            contactOwner: "usr_alice",
         })
 
         expect(outcomes).toEqual([{recordId: "ok", status: "error", errorMessage: "Lead rejected"}])
@@ -89,7 +92,7 @@ describe("addPeopleToCampaign", () => {
         const outcomes = await addPeopleToCampaign({
             recordIds: ["a", "b"],
             campaignId: "cam_1",
-            contactOwnerEmail: null,
+            contactOwner: "usr_alice",
         })
 
         expect(outcomes).toEqual([
@@ -121,12 +124,30 @@ describe("addPeopleToCampaign", () => {
         await addPeopleToCampaign({
             recordIds: ["a", "b", "c"],
             campaignId: "cam_1",
-            contactOwnerEmail: null,
+            contactOwner: "usr_alice",
         })
 
         expect(mockCreateLead).toHaveBeenCalledTimes(2)
         expect(mockCreateLead).toHaveBeenCalledWith(
-            expect.objectContaining({campaignId: "cam_1", person: person("a@example.com")})
+            expect.objectContaining({
+                campaignId: "cam_1",
+                person: person("a@example.com"),
+                contactOwner: "usr_alice",
+            })
         )
+    })
+
+    it("passes a null contactOwner through when no owner is set", async () => {
+        mockLoadPeople.mockResolvedValue(
+            complete(new Map([["ok", complete(person("ok@example.com"))]]))
+        )
+
+        await addPeopleToCampaign({
+            recordIds: ["ok"],
+            campaignId: "cam_1",
+            contactOwner: null,
+        })
+
+        expect(mockCreateLead).toHaveBeenCalledWith(expect.objectContaining({contactOwner: null}))
     })
 })

@@ -1,17 +1,15 @@
 import {beforeEach, describe, expect, it, vi} from "vitest"
 import type {LemlistApiMocks} from "../../test/utils/create-lemlist-api-mocks"
 
-const lemlistApiMocks = vi.hoisted(
-    (): LemlistApiMocks => ({
-        mockLemlistGet: vi.fn(),
-        mockLemlistPost: vi.fn(),
-        mockUpsertContact: vi.fn(),
-        mockLogger: {
-            log: vi.fn(),
-            error: vi.fn(),
-        },
-    })
-)
+const lemlistApiMocks = vi.hoisted((): LemlistApiMocks => ({
+    mockLemlistGet: vi.fn(),
+    mockLemlistPost: vi.fn(),
+    mockUpsertContact: vi.fn(),
+    mockLogger: {
+        log: vi.fn(),
+        error: vi.fn(),
+    },
+}))
 
 vi.mock("./client", () => ({
     lemlistApi: {
@@ -246,7 +244,7 @@ describe("createLeadInCampaign", () => {
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
-            contactOwnerEmail: null,
+            contactOwner: null,
             addLeadQueryParams: defaultAddLeadParams,
         })
 
@@ -266,11 +264,29 @@ describe("createLeadInCampaign", () => {
         )
     })
 
+    it("sends a resolved Lemlist user ID as contactOwner on create and upsert", async () => {
+        await createLeadInCampaign({
+            campaignId: "cam_456",
+            person: samplePerson,
+            contactOwner: "usr_alice",
+            addLeadQueryParams: defaultAddLeadParams,
+        })
+
+        expect(mockUpsertContact).toHaveBeenCalledWith(
+            expect.objectContaining({contactOwner: "usr_alice"})
+        )
+        expect(mockLemlistPost).toHaveBeenCalledWith(
+            endpoints.api.campaignLeads("cam_456"),
+            expect.objectContaining({contactOwner: "usr_alice"}),
+            {}
+        )
+    })
+
     it("calls enrich after creating a lead when enrichment params are enabled", async () => {
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
-            contactOwnerEmail: null,
+            contactOwner: null,
             addLeadQueryParams: {
                 ...defaultAddLeadParams,
                 verifyEmail: true,
@@ -291,7 +307,7 @@ describe("createLeadInCampaign", () => {
         await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
-            contactOwnerEmail: null,
+            contactOwner: null,
             addLeadQueryParams: {
                 ...defaultAddLeadParams,
                 deduplicate: true,
@@ -312,7 +328,7 @@ describe("createLeadInCampaign", () => {
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
-            contactOwnerEmail: null,
+            contactOwner: null,
             addLeadQueryParams: defaultAddLeadParams,
         })
 
@@ -327,7 +343,7 @@ describe("createLeadInCampaign", () => {
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
-            contactOwnerEmail: null,
+            contactOwner: null,
             addLeadQueryParams: defaultAddLeadParams,
         })
 
@@ -344,7 +360,7 @@ describe("createLeadInCampaign", () => {
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
-            contactOwnerEmail: null,
+            contactOwner: null,
             addLeadQueryParams: {
                 ...defaultAddLeadParams,
                 verifyEmail: true,

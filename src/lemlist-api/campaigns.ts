@@ -26,7 +26,8 @@ const logger = createLogger("lemlist-campaigns")
 type CreateLeadOptions = {
     campaignId: string
     person: LemlistPerson
-    contactOwnerEmail: string | null
+    /** Resolved Lemlist user ID (or null to leave ownership to the API-key owner). */
+    contactOwner: string | null
     addLeadQueryParams: AddLeadQueryParams
 }
 
@@ -138,11 +139,11 @@ export function mergeAddLeadQueryParams(
 export async function createLeadInCampaign({
     campaignId,
     person,
-    contactOwnerEmail,
+    contactOwner,
     addLeadQueryParams,
 }: CreateLeadOptions): AsyncResult<LemlistCreateLeadResponse, LemlistApiError> {
-    const contactBody = buildContactBody({person, contactOwnerEmail})
-    const leadBody = buildLeadBody({person, contactOwnerEmail})
+    const contactBody = buildContactBody({person, contactOwner})
+    const leadBody = buildLeadBody({person, contactOwner})
 
     const contactResult = await upsertContact(contactBody)
 

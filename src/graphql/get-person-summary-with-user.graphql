@@ -1,0 +1,11 @@
+query GetPersonSummaryWithUser($recordId: String!) {
+  person(id: $recordId) {
+    email_addresses
+    name {
+      full_name
+    }
+  }
+  currentUser {
+    email
+  }
+}

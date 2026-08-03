@@ -183,7 +183,7 @@ describe("buildContactBody", () => {
     it("includes shared person fields and the contact owner, omitting empty values", () => {
         const body = buildContactBody({
             person: {...baseLeadPerson, linkedinUrl: null, picture: null},
-            contactOwnerEmail: "owner@example.com",
+            contactOwner: "usr_alice",
         })
 
         expect(body).toEqual({
@@ -193,12 +193,12 @@ describe("buildContactBody", () => {
             jobTitle: "Engineer",
             phone: "+15551234567",
             companyDomain: "acme.com",
-            contactOwner: "owner@example.com",
+            contactOwner: "usr_alice",
         })
     })
 
     it("omits the contact owner and excludes lead-only fields", () => {
-        const body = buildContactBody({person: baseLeadPerson, contactOwnerEmail: null})
+        const body = buildContactBody({person: baseLeadPerson, contactOwner: null})
 
         expect(body).not.toHaveProperty("contactOwner")
         expect(body).not.toHaveProperty("companyName")
@@ -207,20 +207,20 @@ describe("buildContactBody", () => {
     it("includes the contact-only summary and location fields", () => {
         const body = buildContactBody({
             person: {...baseLeadPerson, summary: "A bio", location: "San Francisco, CA, US"},
-            contactOwnerEmail: null,
+            contactOwner: null,
         })
 
         expect(body).toMatchObject({summary: "A bio", location: "San Francisco, CA, US"})
     })
 
     it("includes additionalEmails only when the person has more than one email", () => {
-        expect(
-            buildContactBody({person: baseLeadPerson, contactOwnerEmail: null})
-        ).not.toHaveProperty("additionalEmails")
+        expect(buildContactBody({person: baseLeadPerson, contactOwner: null})).not.toHaveProperty(
+            "additionalEmails"
+        )
 
         const body = buildContactBody({
             person: {...baseLeadPerson, additionalEmails: ["work@example.com"]},
-            contactOwnerEmail: null,
+            contactOwner: null,
         })
 
         expect(body).toMatchObject({
@@ -237,7 +237,7 @@ describe("buildLeadBody", () => {
                 ...baseLeadPerson,
                 customAttributes: {industry: "SaaS", seats: 50},
             },
-            contactOwnerEmail: null,
+            contactOwner: null,
         })
 
         expect(body).toMatchObject({
@@ -249,7 +249,7 @@ describe("buildLeadBody", () => {
     })
 
     it("includes the shared person fields and the contact owner", () => {
-        const body = buildLeadBody({person: baseLeadPerson, contactOwnerEmail: "owner@example.com"})
+        const body = buildLeadBody({person: baseLeadPerson, contactOwner: "usr_alice"})
 
         expect(body).toMatchObject({
             email: "jane@example.com",
@@ -260,14 +260,14 @@ describe("buildLeadBody", () => {
             picture: "https://example.com/jane.png",
             phone: "+15551234567",
             companyDomain: "acme.com",
-            contactOwner: "owner@example.com",
+            contactOwner: "usr_alice",
         })
     })
 
     it("excludes the contact-only summary and location fields", () => {
         const body = buildLeadBody({
             person: {...baseLeadPerson, summary: "A bio", location: "San Francisco, CA, US"},
-            contactOwnerEmail: null,
+            contactOwner: null,
         })
 
         expect(body).not.toHaveProperty("summary")

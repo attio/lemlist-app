@@ -19,6 +19,8 @@ import listCampaignsForDialog from "./list-campaigns-for-dialog.server"
 type Props = {
     recordId: string
     person: {email: string; fullName: string | null}
+    /** Email of the Attio user who triggered the action — used as Lemlist contactOwner. */
+    currentUserEmail: string
     hideDialog: () => void
 }
 
@@ -26,11 +28,13 @@ function AddToCampaignDialogForm({
     recordId,
     person,
     campaigns,
+    currentUserEmail,
     hideDialog,
 }: {
     recordId: string
     person: {email: string; fullName: string | null}
     campaigns: LemlistCampaign[]
+    currentUserEmail: string
     hideDialog: () => void
 }) {
     const {schema, initialValues} = buildFormConfig()
@@ -61,7 +65,7 @@ function AddToCampaignDialogForm({
         const result = await addPersonToCampaign({
             campaignId,
             recordId,
-            contactOwnerEmail: null,
+            contactOwner: currentUserEmail,
         })
 
         if (isErrored(result)) {
@@ -75,16 +79,18 @@ function AddToCampaignDialogForm({
             return
         }
 
-        const lead = result.value
+        const {lead, ownerWarning} = result.value
 
         await updateToast({
-            variant: "success",
+            variant: ownerWarning ? "warning" : "success",
             title: "Added to campaign",
-            text: lead.campaignName
-                ? `${person.email} was added to ${lead.campaignName}.`
-                : `${person.email} was added to the campaign.`,
+            text: ownerWarning
+                ? ownerWarning
+                : lead.campaignName
+                  ? `${person.email} was added to ${lead.campaignName}.`
+                  : `${person.email} was added to the campaign.`,
             dismissable: true,
-            durationMs: 4_000,
+            durationMs: ownerWarning ? 8_000 : 4_000,
         })
         hideDialog()
     }
@@ -107,12 +113,17 @@ function AddToCampaignDialogForm({
                 />
                 <SubmitButton label="Add to campaign" />
             </Form>
-            <LeadPreview recordId={recordId} fullName={person.fullName} email={person.email} />
+            <LeadPreview
+                recordId={recordId}
+                fullName={person.fullName}
+                email={person.email}
+                contactOwner={currentUserEmail}
+            />
         </>
     )
 }
 
-function AddToCampaignDialogLoaded({recordId, person, hideDialog}: Props) {
+function AddToCampaignDialogLoaded({recordId, person, currentUserEmail, hideDialog}: Props) {
     const {
         values: {campaigns},
     } = useAsyncCache({
@@ -133,17 +144,24 @@ function AddToCampaignDialogLoaded({recordId, person, hideDialog}: Props) {
             recordId={recordId}
             person={person}
             campaigns={campaigns.value}
+            currentUserEmail={currentUserEmail}
             hideDialog={hideDialog}
         />
     )
 }
 
-export default function AddToCampaignDialog({recordId, person, hideDialog}: Props) {
+export default function AddToCampaignDialog({
+    recordId,
+    person,
+    currentUserEmail,
+    hideDialog,
+}: Props) {
     return (
         <Suspense fallback={<LoadingState>Loading campaigns…</LoadingState>}>
             <AddToCampaignDialogLoaded
                 recordId={recordId}
                 person={person}
+                currentUserEmail={currentUserEmail}
                 hideDialog={hideDialog}
             />
         </Suspense>

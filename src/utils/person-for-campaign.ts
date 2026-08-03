@@ -29,7 +29,8 @@ const CUSTOM_ATTRIBUTE_PREFIX = "attio_"
 
 type BuildBodyArgs = {
     person: LemlistPerson
-    contactOwnerEmail: string | null
+    /** Lemlist user ID preferred; email is also accepted by the API. */
+    contactOwner: string | null
 }
 
 function omitEmpty(
@@ -44,10 +45,7 @@ function omitEmpty(
  * Fields accepted by POST /contacts (upsert). Deliberately excludes lead-only fields: the company
  * name and the Attio custom variables, which only belong on the campaign lead.
  */
-export function buildContactBody({
-    person,
-    contactOwnerEmail,
-}: BuildBodyArgs): Record<string, unknown> {
+export function buildContactBody({person, contactOwner}: BuildBodyArgs): Record<string, unknown> {
     return {
         ...omitEmpty([
             ["email", person.email],
@@ -60,7 +58,7 @@ export function buildContactBody({
             ["linkedinUrl", person.linkedinUrl],
             ["picture", person.picture],
             ["phone", person.phone],
-            ["contactOwner", contactOwnerEmail],
+            ["contactOwner", contactOwner],
         ]),
         // lemlist takes the primary address as `email` and any extras as `additionalEmails`.
         ...(person.additionalEmails.length ? {additionalEmails: person.additionalEmails} : {}),
@@ -72,7 +70,7 @@ export function buildContactBody({
  * the lead carries the company name and the prefixed Attio custom variables, but not the rich
  * profile fields (summary, location) that only the contact endpoint accepts.
  */
-export function buildLeadBody({person, contactOwnerEmail}: BuildBodyArgs): Record<string, unknown> {
+export function buildLeadBody({person, contactOwner}: BuildBodyArgs): Record<string, unknown> {
     return {
         ...omitEmpty([
             ["email", person.email],
@@ -84,7 +82,7 @@ export function buildLeadBody({person, contactOwnerEmail}: BuildBodyArgs): Recor
             ["linkedinUrl", person.linkedinUrl],
             ["picture", person.picture],
             ["phone", person.phone],
-            ["contactOwner", contactOwnerEmail],
+            ["contactOwner", contactOwner],
         ]),
         ...prefixCustomAttributes(person.customAttributes),
     }

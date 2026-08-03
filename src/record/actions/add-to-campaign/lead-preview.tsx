@@ -7,6 +7,11 @@ type Props = {
     /** Attio record ID of the person whose lemlist payload should be previewed. */
     recordId: string
     /**
+     * Attio user email (or Lemlist user ID) that will be sent as `contactOwner`. Resolved
+     * server-side against the Lemlist team before the preview is built. Unset/empty → omitted.
+     */
+    contactOwner: string | null
+    /**
      * Optional display name/email used only to make the loading state nicer ("Loading preview data
      * for Jane Doe…"). Falls back to a generic message when neither is provided.
      */
@@ -36,33 +41,42 @@ function formatValue(value: unknown): string {
     return Array.isArray(value) ? value.join(", ") : String(value)
 }
 
-function LeadPreviewContent({recordId}: {recordId: string}) {
+function LeadPreviewContent({
+    recordId,
+    contactOwner,
+}: {
+    recordId: string
+    contactOwner: string | null
+}) {
     const {
         values: {preview},
-    } = useAsyncCache({preview: [getLeadPreview, recordId]})
+    } = useAsyncCache({preview: [getLeadPreview, {recordId, contactOwner}]})
 
     if (isErrored(preview)) {
         return <Banner variant="error">{preview.error.errorMessage}</Banner>
     }
 
-    const value = preview.value
-    if (!value || Object.keys(value).length === 0) {
+    const {payload, ownerWarning} = preview.value
+    if (!payload || Object.keys(payload).length === 0) {
         return (
             <Banner variant="warning">There is no data to send to lemlist for this person.</Banner>
         )
     }
 
     return (
-        <DescriptionList title="Data sent to lemlist">
-            {Object.entries(value).map(([key, raw]) => {
-                const text = formatValue(raw)
-                return (
-                    <DescriptionList.Item key={key} label={FIELD_LABELS[key] ?? key}>
-                        {LINK_FIELDS.has(key) ? <Link href={text}>{text}</Link> : text}
-                    </DescriptionList.Item>
-                )
-            })}
-        </DescriptionList>
+        <>
+            {ownerWarning ? <Banner variant="warning">{ownerWarning}</Banner> : null}
+            <DescriptionList title="Data sent to lemlist">
+                {Object.entries(payload).map(([key, raw]) => {
+                    const text = formatValue(raw)
+                    return (
+                        <DescriptionList.Item key={key} label={FIELD_LABELS[key] ?? key}>
+                            {LINK_FIELDS.has(key) ? <Link href={text}>{text}</Link> : text}
+                        </DescriptionList.Item>
+                    )
+                })}
+            </DescriptionList>
+        </>
     )
 }
 
@@ -71,7 +85,7 @@ function LeadPreviewContent({recordId}: {recordId: string}) {
  * from their Attio record. Renders its own loading and error states so it can be dropped into any
  * dialog by passing a `recordId`.
  */
-export default function LeadPreview({recordId, fullName, email}: Props) {
+export default function LeadPreview({recordId, contactOwner, fullName, email}: Props) {
     const subject = fullName?.trim() || email?.trim() || null
 
     return (
@@ -82,7 +96,7 @@ export default function LeadPreview({recordId, fullName, email}: Props) {
                 </LoadingState>
             }
         >
-            <LeadPreviewContent recordId={recordId} />
+            <LeadPreviewContent recordId={recordId} contactOwner={contactOwner} />
         </Suspense>
     )
 }
