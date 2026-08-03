@@ -4,7 +4,7 @@ import {
     runQuery,
     showDialog,
     showToast,
-    experimental_extensions,
+    Extensions,
 } from "attio/client"
 import getCurrentUser from "../../../graphql/get-current-user.graphql"
 import {pluralize} from "../../../utils/pluralize"
@@ -151,7 +151,7 @@ async function showSummaryToast({
     })
 }
 
-export default experimental_extensions.defineExtension({
+export default Extensions.defineExtension({
     type: "bulk-record-action",
     id: "bulk-add-to-campaign",
     label: "Add to campaign",

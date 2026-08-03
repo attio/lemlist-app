@@ -1,9 +1,9 @@
-import {experimental_Settings} from "attio/client"
+import {Settings} from "attio/client"
 import "./schema"
 import schema from "./schema"
 
-export default experimental_Settings.defineWorkspacePage(schema, () => {
-    const {Form, Section, Toggle} = experimental_Settings.useForm(schema)
+export default Settings.defineWorkspacePage(schema, () => {
+    const {Form, Section, Toggle} = Settings.useForm(schema)
 
     return (
         <Form>

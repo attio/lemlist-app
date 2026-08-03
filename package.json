@@ -17,15 +17,6 @@
         "test:watch": "vitest",
         "knip": "knip"
     },
-    "pnpm": {
-        "overrides": {
-            "rollup": "4.34.9"
-        },
-        "onlyBuiltDependencies": [
-            "esbuild",
-            "keytar"
-        ]
-    },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.34.1",
         "@typescript-eslint/parser": "^8.34.1",
@@ -39,7 +30,7 @@
     },
     "dependencies": {
         "@attio/fetchable": "^0.0.1-experimental.9",
-        "attio": "0.0.1-experimental.20260722",
+        "attio": "0.0.1-experimental.20260724.1",
         "react": "19.2.4",
         "zod": "3.25.67"
     }

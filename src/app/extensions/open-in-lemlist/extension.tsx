@@ -1,11 +1,11 @@
 import {isErrored} from "@attio/fetchable"
-import {runQuery, showDialog, showToast, experimental_extensions} from "attio/client"
+import {runQuery, showDialog, showToast, Extensions} from "attio/client"
 import getPersonSummary from "../../../graphql/get-person-summary.graphql"
 import {getPrimaryEmail} from "../../../utils/attio"
 import openInLemlist from "../../../record/actions/open-in-lemlist/open-in-lemlist.server"
 import OpenInLemlistDialog from "../../../record/actions/open-in-lemlist/open-in-lemlist-dialog"
 
-export default experimental_extensions.defineExtension({
+export default Extensions.defineExtension({
     type: "record-action",
     id: "open-in-lemlist",
     label: "Open in lemlist",

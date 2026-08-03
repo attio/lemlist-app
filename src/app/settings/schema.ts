@@ -1,8 +1,8 @@
-import {experimental_Settings} from "attio"
-export default experimental_Settings.defineWorkspaceSchema({
-    linkedinEnrichment: experimental_Settings.Schema.boolean(),
-    verifyEmail: experimental_Settings.Schema.boolean(),
-    findEmail: experimental_Settings.Schema.boolean(),
-    findPhone: experimental_Settings.Schema.boolean(),
-    deduplicate: experimental_Settings.Schema.boolean(),
+import {Settings} from "attio"
+export default Settings.defineWorkspaceSchema({
+    linkedinEnrichment: Settings.Schema.boolean(),
+    verifyEmail: Settings.Schema.boolean(),
+    findEmail: Settings.Schema.boolean(),
+    findPhone: Settings.Schema.boolean(),
+    deduplicate: Settings.Schema.boolean(),
 })
