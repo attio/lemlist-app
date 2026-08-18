@@ -231,9 +231,18 @@ export const LemlistWebhookSchema = z.object({
 
 export type LemlistWebhook = z.infer<typeof LemlistWebhookSchema>
 
+/**
+ * lemlist documents `createdAt` as a required ISO 8601 timestamp on every activity webhook — UTC in
+ * practice (`2026-08-10T00:47:42.035Z`), but offsets are accepted too.
+ *
+ * @see https://developer.lemlist.com/api-reference/endpoints/webhooks/add-webhook#webhook-payload
+ */
+const CreatedAtSchema = z.string().datetime({offset: true})
+
 export const LemlistActivityPayloadSchema = z
     .object({
         type: LemlistWebhookEventTypeSchema,
+        createdAt: CreatedAtSchema,
         campaignId: z.string().optional(),
         campaignName: z.string().optional(),
         leadId: z.string().optional(),
@@ -246,6 +255,8 @@ export const LemlistActivityPayloadSchema = z
         linkedinUrl: z.string().optional(),
     })
     .passthrough()
+
+export type LemlistActivityPayload = z.infer<typeof LemlistActivityPayloadSchema>
 
 /** POST /enrich acknowledges the job with an enrichment id; results arrive via webhook. */
 export const LemlistEnrichPostResponseSchema = z.object({

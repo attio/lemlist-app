@@ -36,7 +36,7 @@ export async function getLeadByEmail(
     const parsed = LemlistLeadByEmailSchema.safeParse(responseResult.value.data)
 
     if (!parsed.success) {
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     return complete(parsed.data)
@@ -65,7 +65,7 @@ export async function pauseLead(
     const parsed = LemlistPauseLeadResponseSchema.safeParse(responseResult.value.data)
 
     if (!parsed.success) {
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     return complete(parsed.data)

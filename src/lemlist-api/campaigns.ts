@@ -66,7 +66,7 @@ export async function listCampaigns(): AsyncResult<LemlistCampaign[], LemlistApi
         const parsed = LemlistCampaignListSchema.safeParse(responseResult.value.data)
 
         if (!parsed.success) {
-            return errored(schemaParseError(parsed.error.message))
+            return errored(schemaParseError(parsed.error))
         }
 
         campaigns.push(...parsed.data)
@@ -169,7 +169,7 @@ export async function createLeadInCampaign({
     const parsed = LemlistCreateLeadResponseSchema.safeParse(postResult.value.data)
 
     if (!parsed.success) {
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     if (Object.keys(enrichmentParams).length > 0) {

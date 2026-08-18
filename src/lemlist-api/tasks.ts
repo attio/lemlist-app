@@ -40,7 +40,7 @@ export async function createTask(
 
     if (!parsed.success) {
         logger.error(`Failed to parse create task response: ${parsed.error.message}`)
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     return complete(parsed.data)

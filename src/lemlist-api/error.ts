@@ -1,4 +1,6 @@
+import type {ZodError} from "zod"
 import {createLogger} from "../utils/logger"
+import {InvalidSchemaError} from "../utils/schema-error"
 
 export type LemlistApiError = {
     statusCode: number
@@ -8,9 +10,18 @@ export type LemlistApiError = {
 
 const logger = createLogger("lemlist API error")
 
-export function schemaParseError(message: string): LemlistApiError {
-    logger.error(`Unexpected lemlist API response: ${message}`)
-    return {statusCode: 0, data: undefined, errorMessage: "Unexpected response from lemlist API"}
+export function schemaParseError(detail: string | ZodError): LemlistApiError {
+    logger.error(
+        typeof detail === "string"
+            ? new Error(`Unexpected lemlist API response: ${detail}`)
+            : new InvalidSchemaError(detail)
+    )
+
+    return {
+        statusCode: 0,
+        data: undefined,
+        errorMessage: "Unexpected response from lemlist API",
+    }
 }
 
 type ApiErrorDefinition = {

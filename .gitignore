@@ -5,3 +5,6 @@ graphql.d.ts
 *.d.ts
 dist
 .idea
+
+.env
+.env.local

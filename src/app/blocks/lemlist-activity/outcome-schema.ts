@@ -7,6 +7,7 @@ const baseOutcomeSchema = Workflows.OutcomeSchema.struct({
     lead_email: Workflows.OutcomeSchema.emailAddress().optional().title("Lead email"),
     lead_first_name: Workflows.OutcomeSchema.string().title("Lead first name"),
     lead_last_name: Workflows.OutcomeSchema.string().title("Lead last name"),
+    created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
 })
 
 const emailOutcomeSchema = Workflows.OutcomeSchema.struct({
@@ -16,6 +17,7 @@ const emailOutcomeSchema = Workflows.OutcomeSchema.struct({
     lead_email: Workflows.OutcomeSchema.emailAddress().optional().title("Lead email"),
     lead_first_name: Workflows.OutcomeSchema.string().title("Lead first name"),
     lead_last_name: Workflows.OutcomeSchema.string().title("Lead last name"),
+    created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
     subject: Workflows.OutcomeSchema.string().title("Subject"),
 })
 
@@ -26,6 +28,7 @@ const emailClickedOutcomeSchema = Workflows.OutcomeSchema.struct({
     lead_email: Workflows.OutcomeSchema.emailAddress().optional().title("Lead email"),
     lead_first_name: Workflows.OutcomeSchema.string().title("Lead first name"),
     lead_last_name: Workflows.OutcomeSchema.string().title("Lead last name"),
+    created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
     subject: Workflows.OutcomeSchema.string().title("Subject"),
     link_url: Workflows.OutcomeSchema.string().title("Link URL"),
 })
@@ -37,6 +40,7 @@ const emailBouncedOutcomeSchema = Workflows.OutcomeSchema.struct({
     lead_email: Workflows.OutcomeSchema.emailAddress().optional().title("Lead email"),
     lead_first_name: Workflows.OutcomeSchema.string().title("Lead first name"),
     lead_last_name: Workflows.OutcomeSchema.string().title("Lead last name"),
+    created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
     subject: Workflows.OutcomeSchema.string().title("Subject"),
     bounce_reason: Workflows.OutcomeSchema.string().title("Bounce reason"),
 })
@@ -48,6 +52,7 @@ const linkedinOutcomeSchema = Workflows.OutcomeSchema.struct({
     lead_email: Workflows.OutcomeSchema.emailAddress().optional().title("Lead email"),
     lead_first_name: Workflows.OutcomeSchema.string().title("Lead first name"),
     lead_last_name: Workflows.OutcomeSchema.string().title("Lead last name"),
+    created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
     linkedin_url: Workflows.OutcomeSchema.string().title("LinkedIn URL"),
 })
 

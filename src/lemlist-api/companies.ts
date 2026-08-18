@@ -17,7 +17,7 @@ export async function listCompanies(): AsyncResult<LemlistCompany[], LemlistApiE
     const parsed = LemlistCompanyListSchema.safeParse(responseResult.value.data)
 
     if (!parsed.success) {
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     return complete(parsed.data.data)

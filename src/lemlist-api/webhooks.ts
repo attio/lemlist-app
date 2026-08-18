@@ -25,7 +25,7 @@ export async function createWebhook(
     const validatedRequest = CreateLemlistWebhookRequestSchema.safeParse(request)
 
     if (!validatedRequest.success) {
-        return errored(schemaParseError(validatedRequest.error.message))
+        return errored(schemaParseError(validatedRequest.error))
     }
 
     const responseResult = await lemlistApi.post(
@@ -42,7 +42,7 @@ export async function createWebhook(
     const parsed = LemlistWebhookSchema.safeParse(responseResult.value.data)
 
     if (!parsed.success) {
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     return complete(parsed.data)

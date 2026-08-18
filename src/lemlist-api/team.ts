@@ -19,7 +19,7 @@ async function getUser(userId: string): AsyncResult<LemlistUser, LemlistApiError
 
     if (!parsed.success) {
         logger.error(`Failed to parse user ${userId}: ${parsed.error.message}`)
-        return errored(schemaParseError(parsed.error.message))
+        return errored(schemaParseError(parsed.error))
     }
 
     return complete(parsed.data)
@@ -39,7 +39,7 @@ export async function getTeamMembers(): AsyncResult<LemlistUser[], LemlistApiErr
 
     if (!parsedTeam.success) {
         logger.error(`Failed to parse team response: ${parsedTeam.error.message}`)
-        return errored(schemaParseError(parsedTeam.error.message))
+        return errored(schemaParseError(parsedTeam.error))
     }
 
     const {userIds} = parsedTeam.data
