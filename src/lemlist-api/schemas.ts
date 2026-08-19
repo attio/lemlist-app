@@ -131,8 +131,10 @@ export const LemlistWebhookEventTypeSchema = z.enum([
     "attracted",
     "warmed",
     "interested",
+    // Deprecated by lemlist; kept so existing trigger configs still activate.
     "skipped",
     "notInterested",
+    // Deprecated by lemlist; kept so existing trigger configs still activate.
     "opportunitiesDone",
     "emailsSent",
     "emailsOpened",
