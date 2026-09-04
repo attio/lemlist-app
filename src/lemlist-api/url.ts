@@ -1,4 +1,3 @@
-import {encodeBase64} from "../utils/base64"
 import {LEMLIST_API_BASE_URL} from "./endpoints"
 
 export type QueryParams = Record<
@@ -7,7 +6,7 @@ export type QueryParams = Record<
 >
 
 export function buildAuthorizationHeader(apiToken: string): string {
-    return `Basic ${encodeBase64(`:${apiToken}`)}`
+    return `Basic ${btoa(`:${apiToken}`)}`
 }
 
 export function buildUrl(path: string, params?: QueryParams): string {
