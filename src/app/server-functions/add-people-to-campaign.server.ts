@@ -1,8 +1,9 @@
 import {isErrored} from "@attio/fetchable"
-import {attioApiErrorMessage} from "../../../attio/error"
-import {createLeadInCampaign, getAddLeadQueryParams} from "../../../lemlist-api/campaigns"
-import {createLogger} from "../../../utils/logger"
-import {loadPeopleForCampaign} from "./load-people-for-campaign"
+import {attioApiErrorMessage} from "../../attio/error"
+import {createLeadInCampaign, getAddLeadQueryParams} from "../../lemlist-api/campaigns"
+import {createLogger} from "../../common/logger"
+import {loadPeopleForCampaign} from "../../record/bulk-actions/add-to-campaign/load-people-for-campaign"
+import {lemlistErrorMessage} from "../../lemlist-api/transport/error"
 
 const logger = createLogger("bulk-add-people-to-campaign")
 
@@ -40,7 +41,10 @@ export default async function addPeopleToCampaign({
 }): Promise<BulkAddOutcome[]> {
     const loadResult = await loadPeopleForCampaign(recordIds)
     if (isErrored(loadResult)) {
-        logger.error(`Failed to load batch for campaign ${campaignId}: ${loadResult.error.code}`)
+        logger.error("Failed to load batch for campaign", {
+            campaignId,
+            error: loadResult.error,
+        })
         const errorMessage = attioApiErrorMessage(loadResult.error)
         return recordIds.map((recordId) => ({recordId, status: "error", errorMessage}))
     }
@@ -75,13 +79,15 @@ export default async function addPeopleToCampaign({
         })
 
         if (isErrored(result)) {
-            logger.error(
-                `Failed to add ${recordId} to campaign ${campaignId}: ${result.error.errorMessage}`
-            )
+            logger.error("Failed to add person to campaign", {
+                recordId,
+                campaignId,
+                error: result.error,
+            })
             outcomes.push({
                 recordId,
                 status: "error",
-                errorMessage: result.error.errorMessage,
+                errorMessage: lemlistErrorMessage(result.error),
             })
             continue
         }

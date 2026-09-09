@@ -10,11 +10,12 @@ import {
 } from "attio/client"
 import {Suspense} from "react"
 import type {LemlistCampaign} from "../../../lemlist-api/schemas"
-import {createCampaignsProvider} from "../../../utils/hooks/use-campaigns-provider"
-import addPersonToCampaign from "./add-person-to-campaign.server"
+import {createCampaignsProvider} from "../../../hooks/use-campaigns-provider"
+import addPersonToCampaign from "../../../app/server-functions/add-person-to-campaign.server"
 import {buildFormConfig} from "./campaign-form-utils"
 import LeadPreview from "./lead-preview"
-import listCampaignsForDialog from "./list-campaigns-for-dialog.server"
+import listCampaignsForDialog from "../../../app/server-functions/list-campaigns-for-dialog.server"
+import {lemlistErrorMessage} from "../../../lemlist-api/transport/error"
 
 type Props = {
     recordId: string
@@ -133,7 +134,7 @@ function AddToCampaignDialogLoaded({recordId, person, currentUserEmail, hideDial
     if (isErrored(campaigns)) {
         return (
             <>
-                <Banner variant="error">{campaigns.error.errorMessage}</Banner>
+                <Banner variant="error">{lemlistErrorMessage(campaigns.error)}</Banner>
                 <Button label="Close" onClick={hideDialog} />
             </>
         )

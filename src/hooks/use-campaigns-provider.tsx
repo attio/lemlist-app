@@ -1,7 +1,7 @@
 import type {PlainComboboxOptionsProvider} from "attio/client"
 import {useAsyncCache} from "attio/client"
 import {useMemo} from "react"
-import listCampaignsForBlock from "../list-campaigns.server"
+import listCampaignsForBlock from "../app/server-functions/list-campaigns.server"
 
 type Campaign = {value: string; label: string; description?: string}
 

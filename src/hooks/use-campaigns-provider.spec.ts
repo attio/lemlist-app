@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from "vitest"
 
-vi.mock("../list-campaigns.server", () => ({default: vi.fn()}))
+vi.mock("../app/server-functions/list-campaigns.server", () => ({default: vi.fn()}))
 
 import {createCampaignsProvider} from "./use-campaigns-provider"
 

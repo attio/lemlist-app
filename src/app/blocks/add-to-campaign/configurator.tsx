@@ -1,6 +1,6 @@
 import {Workflows} from "attio/client"
-import {useCampaignsProvider} from "../../../utils/hooks/use-campaigns-provider"
-import {useTeamMembersProvider} from "../../../utils/hooks/use-team-members-provider"
+import {useCampaignsProvider} from "../../../hooks/use-campaigns-provider"
+import {useTeamMembersProvider} from "../../../hooks/use-team-members-provider"
 import block from "./block"
 
 export default Workflows.defineConfigurator(block, (workflowBlock) => {

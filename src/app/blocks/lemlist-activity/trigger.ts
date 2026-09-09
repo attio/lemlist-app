@@ -1,7 +1,7 @@
 import {Workflows} from "attio/server"
 import {LemlistActivityPayloadSchema} from "../../../lemlist-api/schemas"
-import {createLogger} from "../../../utils/logger"
-import {InvalidSchemaError} from "../../../utils/schema-error"
+import {createLogger} from "../../../common/logger"
+import {InvalidSchemaError} from "../../../lemlist-api/transport/schema-error"
 import block from "./block"
 import {toOutcomeData} from "./to-outcome"
 

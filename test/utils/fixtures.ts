@@ -1,5 +1,5 @@
 import type {AddLeadQueryParams} from "../../src/lemlist-api/format"
-import type {LemlistPerson} from "../../src/utils/person-for-campaign"
+import type {LemlistPerson} from "../../src/lemlist-api/person-for-campaign"
 
 export const defaultContactId = "ctc_contact_1"
 

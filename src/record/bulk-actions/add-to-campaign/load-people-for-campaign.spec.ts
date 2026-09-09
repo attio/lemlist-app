@@ -14,7 +14,7 @@ import {loadPeopleForCampaign} from "./load-people-for-campaign"
 
 vi.mock("../../../attio/people", () => ({getPeopleByRecordIds: vi.fn()}))
 vi.mock("../../../attio/companies", () => ({getCompaniesByRecordIds: vi.fn()}))
-vi.mock("../../../utils/logger", () => ({
+vi.mock("../../../common/logger", () => ({
     createLogger: () => ({log: vi.fn(), error: vi.fn()}),
 }))
 

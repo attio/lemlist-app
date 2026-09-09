@@ -1,11 +1,11 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
 import {ErrorCode, errorMessage} from "../error-codes"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
-import type {LemlistEnrichGetResponse} from "./schemas"
+import {schemaParseError} from "./transport/error"
+import type {EnrichmentGetResult} from "./schemas"
 import {LemlistEnrichGetResponseSchema, LemlistEnrichPostResponseSchema} from "./schemas"
-import type {QueryParams} from "./url"
+import type {QueryParams} from "./transport/url"
 
 export type EnrichContactInput = {
     email?: string
@@ -113,11 +113,6 @@ export async function enrichContact(
     }
 
     return complete(parsed.data.id)
-}
-
-export type EnrichmentGetResult = {
-    status: "completed" | "in_progress"
-    data: LemlistEnrichGetResponse
 }
 
 /**

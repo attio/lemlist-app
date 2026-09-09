@@ -1,7 +1,8 @@
 import {isErrored} from "@attio/fetchable"
 import {Workflows} from "attio/server"
 import {getLeadByEmail, pauseLead} from "../../../lemlist-api/leads"
-import {createLogger} from "../../../utils/logger"
+import {isRetryable, lemlistErrorMessage} from "../../../lemlist-api/transport/error"
+import {createLogger} from "../../../common/logger"
 import block from "./block"
 
 const logger = createLogger("PauseLead step - execute")
@@ -22,7 +23,11 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config}) => {
 
         if (isErrored(result)) {
             logger.error("Failed to pause lead", {leadId, error: result.error})
-            return {type: "error", errorMessage: result.error.errorMessage}
+            return {
+                type: "error",
+                errorMessage: lemlistErrorMessage(result.error),
+                retryable: isRetryable(result.error),
+            }
         }
 
         for (const paused of result.value) {
@@ -33,7 +38,11 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config}) => {
 
         if (isErrored(leadsResult)) {
             logger.error("Failed to fetch leads by email", {error: leadsResult.error})
-            return {type: "error", errorMessage: leadsResult.error.errorMessage}
+            return {
+                type: "error",
+                errorMessage: lemlistErrorMessage(leadsResult.error),
+                retryable: isRetryable(leadsResult.error),
+            }
         }
 
         const leads = leadsResult.value
@@ -59,7 +68,11 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config}) => {
                     campaignId: lead.campaign.id,
                     error: result.error,
                 })
-                return {type: "error", errorMessage: result.error.errorMessage}
+                return {
+                    type: "error",
+                    errorMessage: lemlistErrorMessage(result.error),
+                    retryable: isRetryable(result.error),
+                }
             }
 
             for (const paused of result.value) {

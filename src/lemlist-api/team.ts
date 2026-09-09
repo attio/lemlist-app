@@ -1,8 +1,8 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {createLogger} from "../utils/logger"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {createLogger} from "../common/logger"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
+import {schemaParseError} from "./transport/error"
 import {LemlistTeamResponseSchema, type LemlistUser, LemlistUserSchema} from "./schemas"
 
 const logger = createLogger("lemlist-team")
@@ -11,7 +11,7 @@ async function getUser(userId: string): AsyncResult<LemlistUser, LemlistApiError
     const result = await lemlistApi.get(endpoints.api.user(userId))
 
     if (isErrored(result)) {
-        logger.error(`Failed to fetch user ${userId}: ${result.error.errorMessage}`)
+        logger.error("Failed to fetch user", {userId, error: result.error})
         return result
     }
 

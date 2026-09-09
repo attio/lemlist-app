@@ -1,8 +1,9 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {resolveContactOwner} from "../../../lemlist-api/resolve-contact-owner"
-import {buildContactBody, buildLeadBody} from "../../../utils/person-for-campaign"
-import {addPersonToCampaignErrorMessage} from "./errors"
-import {loadPersonForLemlist} from "./load-person-for-lemlist"
+import {resolveContactOwner} from "../../lemlist-api/resolve-contact-owner"
+import {buildContactBody, buildLeadBody} from "../../lemlist-api/person-for-campaign"
+import {addPersonToCampaignErrorMessage} from "../../record/actions/add-to-campaign/errors"
+import {loadPersonForLemlist} from "../../record/actions/add-to-campaign/load-person-for-lemlist"
+import {lemlistErrorMessage} from "../../lemlist-api/transport/error"
 
 /** The exact lemlist lead payload, keyed by lemlist field name. */
 export type LeadPreviewPayload = Record<string, unknown>
@@ -33,7 +34,7 @@ export default async function getLeadPreview({
 }): AsyncResult<LeadPreview, LeadPreviewError> {
     const ownerResult = await resolveContactOwner({owner: contactOwner})
     if (isErrored(ownerResult)) {
-        return errored({errorMessage: ownerResult.error.errorMessage})
+        return errored({errorMessage: lemlistErrorMessage(ownerResult.error)})
     }
 
     const personResult = await loadPersonForLemlist(recordId)

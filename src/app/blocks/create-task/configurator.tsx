@@ -1,9 +1,9 @@
 import type {PlainComboboxOption, PlainComboboxOptionsProvider} from "attio/client"
 import {useAsyncCache, Workflows} from "attio/client"
-import listTeamMembers from "../../../utils/list-team-members.server"
+import listTeamMembers from "../../server-functions/list-team-members.server"
 import block from "./block"
 import {PRIORITY_OPTIONS, TASK_TYPE_OPTIONS} from "./const"
-import listRecordsForBlock from "./list-records.server"
+import listRecordsForBlock from "../../server-functions/list-records.server"
 
 type CategorizedPlainComboboxOption = PlainComboboxOption & {categoryLabel: string}
 

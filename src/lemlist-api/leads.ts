@@ -1,8 +1,8 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {createLogger} from "../utils/logger"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {createLogger} from "../common/logger"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
+import {schemaParseError} from "./transport/error"
 import {
     type LemlistLeadByEmail,
     LemlistLeadByEmailSchema,
@@ -25,11 +25,11 @@ export async function getLeadByEmail(
     })
 
     if (isErrored(responseResult)) {
-        if (responseResult.error.statusCode === 404) {
+        if (responseResult.error.code === "NOT_FOUND") {
             return complete([])
         }
 
-        logger.error("Failed to fetch lead by email", {statusCode: responseResult.error.statusCode})
+        logger.error("Failed to fetch lead by email", {error: responseResult.error})
         return responseResult
     }
 
@@ -56,8 +56,8 @@ export async function pauseLead(
 
     if (isErrored(responseResult)) {
         logger.error("Failed to pause lead", {
-            statusCode: responseResult.error.statusCode,
             leadId,
+            error: responseResult.error,
         })
         return responseResult
     }

@@ -2,12 +2,12 @@ import {type AsyncResult, errored, isErrored} from "@attio/fetchable"
 import {getCompanyByRecordId} from "../../../attio/companies"
 import {getPersonByRecordId} from "../../../attio/people"
 import type {AttioCompany} from "../../../attio/schemas"
-import {createLogger} from "../../../utils/logger"
+import {createLogger} from "../../../common/logger"
 import {
     attioRecordToLemlistPerson,
     extractEmails,
     type LemlistPerson,
-} from "../../../utils/person-for-campaign"
+} from "../../../lemlist-api/person-for-campaign"
 import type {AddPersonToCampaignError} from "./errors"
 
 const logger = createLogger("load-person-for-campaign")
@@ -41,9 +41,10 @@ export async function loadPersonForLemlist(
         if (isErrored(companyResult)) {
             // Best-effort: never block adding the person just because the linked company couldn't be
             // loaded. We omit the company fields.
-            logger.error(
-                `Failed to load company ${companyRecordId}; sending no company data: ${companyResult.error.code}`
-            )
+            logger.error("Failed to load company; sending no company data", {
+                companyRecordId,
+                error: companyResult.error,
+            })
         } else {
             company = companyResult.value
         }

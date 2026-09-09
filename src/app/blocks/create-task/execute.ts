@@ -1,8 +1,9 @@
 import {isErrored} from "@attio/fetchable"
 import {Workflows} from "attio/server"
 import {createTask} from "../../../lemlist-api/tasks"
-import {createLogger} from "../../../utils/logger"
+import {createLogger} from "../../../common/logger"
 import block from "./block"
+import {isRetryable, lemlistErrorMessage} from "../../../lemlist-api/transport/error"
 
 const logger = createLogger("create-task step - execute")
 
@@ -25,7 +26,8 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config, metad
 
         return {
             type: "error",
-            errorMessage: result.error.errorMessage,
+            errorMessage: lemlistErrorMessage(result.error),
+            retryable: isRetryable(result.error),
         }
     }
 

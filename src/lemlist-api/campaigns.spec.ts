@@ -11,7 +11,7 @@ const lemlistApiMocks = vi.hoisted((): LemlistApiMocks => ({
     },
 }))
 
-vi.mock("./client", () => ({
+vi.mock("./transport/lemlist", () => ({
     lemlistApi: {
         get: lemlistApiMocks.mockLemlistGet,
         post: lemlistApiMocks.mockLemlistPost,
@@ -20,7 +20,7 @@ vi.mock("./client", () => ({
 vi.mock("./contacts", () => ({
     upsertContact: lemlistApiMocks.mockUpsertContact,
 }))
-vi.mock("../utils/logger", () => ({
+vi.mock("../common/logger", () => ({
     createLogger: () => lemlistApiMocks.mockLogger,
 }))
 
@@ -218,7 +218,7 @@ describe("listCampaigns", () => {
     })
 
     it("propagates API errors", async () => {
-        const apiError = {statusCode: 500, errorMessage: "Server error"}
+        const apiError = {code: "LEMLIST_SERVER_ERROR" as const, detail: "server error"}
         mockLemlistGet.mockResolvedValue(errored(apiError))
 
         const result = await listCampaigns()
@@ -233,8 +233,7 @@ describe("listCampaigns", () => {
 
         expect(isErrored(result)).toBe(true)
         if (isErrored(result)) {
-            expect(result.error.statusCode).toBe(0)
-            expect(result.error.errorMessage).toBe("Unexpected response from lemlist API")
+            expect(result.error.code).toBe("UNEXPECTED_RESPONSE")
         }
     })
 })
@@ -322,7 +321,7 @@ describe("createLeadInCampaign", () => {
     })
 
     it("returns contact upsert errors without creating a lead", async () => {
-        const contactError = {statusCode: 400, errorMessage: "Invalid contact"}
+        const contactError = {code: "INVALID_REQUEST" as const, detail: "invalid contact"}
         mockUpsertContact.mockResolvedValue(errored(contactError))
 
         const result = await createLeadInCampaign({
@@ -337,7 +336,7 @@ describe("createLeadInCampaign", () => {
     })
 
     it("returns campaign lead API errors", async () => {
-        const leadError = {statusCode: 422, errorMessage: "Lead rejected"}
+        const leadError = {code: "UNEXPECTED_ERROR" as const, detail: "lead rejected"}
         mockLemlistPost.mockResolvedValue(errored(leadError))
 
         const result = await createLeadInCampaign({
@@ -354,7 +353,7 @@ describe("createLeadInCampaign", () => {
         mockLemlistPost
             .mockResolvedValueOnce(apiSuccess(sampleLeadResponse))
             .mockResolvedValueOnce(
-                errored({statusCode: 500, errorMessage: "Enrichment unavailable"})
+                errored({code: "LEMLIST_SERVER_ERROR", detail: "enrichment unavailable"})
             )
 
         const result = await createLeadInCampaign({

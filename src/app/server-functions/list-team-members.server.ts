@@ -1,6 +1,6 @@
 import {isErrored} from "@attio/fetchable"
-import {getTeamMembers} from "../lemlist-api/team"
-import {createLogger} from "./logger"
+import {getTeamMembers} from "../../lemlist-api/team"
+import {createLogger} from "../../common/logger"
 
 const logger = createLogger("list-team-members")
 
@@ -18,7 +18,7 @@ export default async function listTeamMembers(): Promise<TeamMemberOption[]> {
     const result = await getTeamMembers()
 
     if (isErrored(result)) {
-        logger.error(`Failed to list team members: ${result.error.errorMessage}`)
+        logger.error("Failed to list team members", {error: result.error})
         return []
     }
 

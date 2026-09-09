@@ -59,7 +59,7 @@ describe(resolveContactOwner, () => {
     })
 
     it("surfaces team-fetch failures", async () => {
-        const apiError = {statusCode: 401, errorMessage: "Unauthorized"}
+        const apiError = {code: "UNAUTHORIZED" as const, detail: "unauthorized"}
         mockGetTeamMembers.mockResolvedValue(errored(apiError))
 
         const result = await resolveContactOwner({owner: "alice@example.com"})

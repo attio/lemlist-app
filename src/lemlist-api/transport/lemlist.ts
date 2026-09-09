@@ -1,7 +1,7 @@
 import {type AsyncResult, complete, errored} from "@attio/fetchable"
-import {getWorkspaceConnection} from "attio/server"
-import {createLogger} from "../utils/logger"
-import {formatApiErrorMessage, type LemlistApiError} from "./error"
+import {type Connection, getWorkspaceConnection} from "attio/server"
+import {createLogger} from "../../common/logger"
+import {codeForStatus, type LemlistApiError, readErrorDetail} from "./error"
 import {buildAuthorizationHeader, buildUrl, type QueryParams} from "./url"
 
 // lemlist rate limit: 20 req/2s per API key.
@@ -13,9 +13,20 @@ const logger = createLogger("lemlist client API")
 
 export type {LemlistApiError} from "./error"
 
-// errored(...) on any non-2xx HTTP response or transport failure.
-// Callers only need isErrored() to handle all failures.
-// statusCode is 0 for transport failures (no HTTP response received).
+// Not every throw in this runtime is `instanceof Error` (e.g. DOMException does not
+// extend it), so duck-type the message instead of assuming the prototype.
+function messageFrom(error: unknown): string {
+    if (error instanceof Error) return error.message
+    if (
+        typeof error === "object" &&
+        error !== null &&
+        typeof (error as {message?: unknown}).message === "string"
+    ) {
+        return (error as {message: string}).message
+    }
+    return String(error)
+}
+
 type LemlistApiResponse<T> = {
     statusCode: number
     data: T | undefined
@@ -27,13 +38,20 @@ async function request<T>(
     options?: {
         params?: QueryParams
         body?: unknown
+        /** Defaults to the workspace connection. Set explicitly for connection-lifecycle
+         * events, where `getWorkspaceConnection()` cannot find it yet. */
+        connection?: Connection
     },
     attempt = 0
 ): AsyncResult<LemlistApiResponse<T>, LemlistApiError> {
+    // Outside the try on purpose: this throws an AttioError that drives the connection
+    // dialog, and catching it would show a network failure instead of a connect prompt.
+    const connection = options?.connection ?? getWorkspaceConnection()
+
     try {
         const headers: Record<string, string> = {
             Accept: "application/json",
-            Authorization: buildAuthorizationHeader(getWorkspaceConnection().value),
+            Authorization: buildAuthorizationHeader(connection.value),
         }
 
         const init: RequestInit = {
@@ -63,9 +81,8 @@ async function request<T>(
 
         if (!response.ok) {
             return errored({
-                statusCode: response.status,
-                data: undefined,
-                errorMessage: await formatApiErrorMessage(response, `${method} ${url}`),
+                code: codeForStatus(response.status),
+                detail: await readErrorDetail(response, `${method} ${url}`),
             })
         }
 
@@ -86,18 +103,14 @@ async function request<T>(
             })
         } catch {
             logger.error("Invalid JSON response from lemlist")
-            return errored({
-                statusCode: response.status,
-                data: undefined,
-                errorMessage: "Invalid response from lemlist",
-            })
+            return errored({code: "UNEXPECTED_RESPONSE", detail: "response was not JSON"})
         }
     } catch (error) {
-        const message = error instanceof Error ? error.message : "unknown_error"
+        const message = messageFrom(error)
 
         logger.error(message)
 
-        return errored({statusCode: 0, data: undefined, errorMessage: message})
+        return errored({code: "NETWORK_ERROR", detail: message})
     }
 }
 
@@ -136,4 +149,18 @@ export const lemlistApi = {
     post,
     put,
     delete: del,
+}
+
+/**
+ * Factory for connection-lifecycle events where the workspace connection isn't wired up
+ * yet. Threads the explicit `Connection` through every call.
+ */
+export function lemlistApiWithConnection(connection: Connection) {
+    return {
+        get: (path: string, params?: QueryParams) => request("GET", path, {params, connection}),
+        post: (path: string, body?: unknown, params?: QueryParams) =>
+            request("POST", path, {body, params, connection}),
+        delete: (path: string, params?: QueryParams) =>
+            request("DELETE", path, {params, connection}),
+    }
 }

@@ -1,7 +1,7 @@
 import type {PlainComboboxOptionsProvider} from "attio/client"
 import {useAsyncCache} from "attio/client"
 import {useMemo} from "react"
-import listTeamMembers from "../list-team-members.server"
+import listTeamMembers from "../app/server-functions/list-team-members.server"
 
 /**
  * Returns a memoized options provider for team member combobox inputs.

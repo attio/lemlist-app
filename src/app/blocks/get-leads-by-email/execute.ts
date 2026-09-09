@@ -1,7 +1,8 @@
 import {isErrored} from "@attio/fetchable"
 import {Workflows} from "attio/server"
 import {getLeadByEmail} from "../../../lemlist-api/leads"
-import {createLogger} from "../../../utils/logger"
+import {isRetryable, lemlistErrorMessage} from "../../../lemlist-api/transport/error"
+import {createLogger} from "../../../common/logger"
 import block from "./block"
 
 const logger = createLogger("GetLeadByEmail step - execute")
@@ -15,7 +16,11 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config, metad
 
     if (isErrored(result)) {
         logger.error("Failed to fetch leads by email", {error: result.error})
-        return {type: "error", errorMessage: result.error.errorMessage}
+        return {
+            type: "error",
+            errorMessage: lemlistErrorMessage(result.error),
+            retryable: isRetryable(result.error),
+        }
     }
 
     const leads = result.value

@@ -1,8 +1,9 @@
 import {isErrored} from "@attio/fetchable"
 import {Workflows} from "attio/server"
-import {createLogger} from "../../../utils/logger"
-import {deleteStoredWebhook} from "../../../utils/webhook-lifecycle"
+import {createLogger} from "../../../common/logger"
+import {deleteStoredWebhook} from "./webhook-lifecycle"
 import block from "./block"
+import {lemlistErrorMessage} from "../../../lemlist-api/transport/error"
 
 const logger = createLogger("lemlistActivity trigger - deactivate")
 
@@ -16,7 +17,7 @@ export default Workflows.defineWorkflowBlockDeactivate(block, async ({metadata})
     if (isErrored(result)) {
         return {
             type: "error",
-            errorMessage: result.error.errorMessage,
+            errorMessage: lemlistErrorMessage(result.error),
         }
     }
 

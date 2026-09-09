@@ -1,9 +1,9 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
 import {kv} from "attio/server"
-import type {LemlistApiError} from "../lemlist-api/client"
-import type {LemlistWebhookEventType} from "../lemlist-api/schemas"
-import {createWebhook, deleteWebhook} from "../lemlist-api/webhooks"
-import type {Logger} from "./logger"
+import type {LemlistApiError} from "../../../lemlist-api/transport/lemlist"
+import type {LemlistWebhookEventType} from "../../../lemlist-api/schemas"
+import {createWebhook, deleteWebhook} from "../../../lemlist-api/webhooks"
+import type {Logger} from "../../../common/logger"
 
 function webhookStorageKey(uniqueExecutionId: string): string {
     return `webhook:${uniqueExecutionId}`
@@ -47,7 +47,7 @@ export async function createStoredWebhook({
             error,
         })
         await deleteWebhook(webhookId)
-        return errored({statusCode: 0, errorMessage: "Failed to store webhook id"})
+        return errored({code: "UNEXPECTED_ERROR", detail: "could not store the webhook id"})
     }
 
     logger?.log("Webhook registered", {uniqueExecutionId, webhookId, type})
@@ -74,7 +74,7 @@ export async function deleteStoredWebhook({
     const result = await deleteWebhook(webhookId)
 
     // 404 means webhook was already deleted (e.g. expired or removed externally) — still clean up KV
-    if (isErrored(result) && result.error.statusCode !== 404) {
+    if (isErrored(result) && result.error.code !== "NOT_FOUND") {
         logger?.error("Failed to delete enrichment webhook", {uniqueExecutionId, webhookId})
         return result
     }

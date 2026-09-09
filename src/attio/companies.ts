@@ -1,5 +1,5 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {createLogger} from "../utils/logger"
+import {createLogger} from "../common/logger"
 import {attioGet, attioPost} from "./client"
 import type {AttioApiError} from "./error"
 import {

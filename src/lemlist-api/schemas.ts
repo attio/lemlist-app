@@ -74,32 +74,24 @@ const LemlistCampaignSchema = z.object({
 
 export type LemlistCampaign = z.infer<typeof LemlistCampaignSchema>
 
-function normalizeCampaignListResponse(response: unknown): unknown {
-    if (Array.isArray(response)) {
-        return response
-    }
+/**
+ * lemlist list endpoints sometimes return a bare array and sometimes wrap it in an
+ * envelope, so unwrap the first key that holds one.
+ */
+function unwrapList(...keys: string[]) {
+    return (response: unknown): unknown => {
+        if (Array.isArray(response) || typeof response !== "object" || response === null) {
+            return response
+        }
 
-    if (typeof response === "object" && response !== null) {
         const record = response as Record<string, unknown>
 
-        if (Array.isArray(record.campaigns)) {
-            return record.campaigns
-        }
-
-        if (Array.isArray(record.data)) {
-            return record.data
-        }
-
-        if (Array.isArray(record.results)) {
-            return record.results
-        }
+        return keys.map((key) => record[key]).find(Array.isArray) ?? response
     }
-
-    return response
 }
 
 export const LemlistCampaignListSchema = z.preprocess(
-    normalizeCampaignListResponse,
+    unwrapList("campaigns", "data", "results"),
     z.array(LemlistCampaignSchema)
 )
 
@@ -217,21 +209,18 @@ export const CreateLemlistWebhookRequestSchema = z.object({
 
 export type CreateLemlistWebhookRequest = z.infer<typeof CreateLemlistWebhookRequestSchema>
 
-export type CreateLemlistWebhookParams = {
-    campaignId?: string
-    isFirst?: boolean
-    zapId?: string
-}
-
 export const LemlistWebhookSchema = z.object({
     _id: z.string(),
     targetUrl: z.string(),
     createdAt: z.string(),
     type: LemlistWebhookEventTypeSchema.optional(),
     campaignId: z.string().optional(),
+    disabled: z.boolean().optional(),
 })
 
 export type LemlistWebhook = z.infer<typeof LemlistWebhookSchema>
+
+export const LemlistWebhookListSchema = z.array(LemlistWebhookSchema)
 
 /**
  * lemlist documents `createdAt` as a required ISO 8601 timestamp on every activity webhook — UTC in
@@ -266,11 +255,11 @@ export const LemlistEnrichPostResponseSchema = z.object({
 })
 
 /**
- * Minimal webhook schema used only to match the enrichment id in the resume callback.
+ * Minimal webhook schema used only to match the enrichment id(s) in the incoming callback.
  * Full data is fetched via GET /enrich/{id}.
  */
-export const LemlistEnrichmentDoneWebhookMinimalSchema = z.object({
-    type: z.literal("enrichmentDone"),
+export const LemlistEnrichmentWebhookSchema = z.object({
+    type: z.enum(["enrichmentDone", "enrichmentError"]),
     data: z.array(z.object({id: z.string()})),
 })
 
@@ -310,7 +299,13 @@ export const LemlistEnrichGetResponseSchema = z.object({
         .optional(),
 })
 
-export type LemlistEnrichGetResponse = z.infer<typeof LemlistEnrichGetResponseSchema>
+/** A fetched enrichment: `in_progress` while lemlist answers 202, `completed` on 200. */
+export const EnrichmentGetResultSchema = z.object({
+    status: z.enum(["completed", "in_progress"]),
+    data: LemlistEnrichGetResponseSchema,
+})
+
+export type EnrichmentGetResult = z.infer<typeof EnrichmentGetResultSchema>
 
 const LemlistCompanySchema = z.object({
     _id: z.string(),

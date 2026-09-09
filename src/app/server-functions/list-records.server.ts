@@ -1,6 +1,6 @@
 import {isErrored} from "@attio/fetchable"
-import {listCompanies} from "../../../lemlist-api/companies"
-import {createLogger} from "../../../utils/logger"
+import {listCompanies} from "../../lemlist-api/companies"
+import {createLogger} from "../../common/logger"
 
 const logger = createLogger("create-task-block list-records")
 
@@ -13,7 +13,7 @@ export default async function listRecordsForBlock(): Promise<RecordOption[]> {
     const result = await listCompanies()
 
     if (isErrored(result)) {
-        logger.error(`Failed to list companies: ${result.error.errorMessage}`)
+        logger.error("Failed to list companies", {error: result.error})
         return []
     }
 

@@ -1,8 +1,8 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import type {LemlistApiError} from "../../../lemlist-api/client"
-import {getContact, getContactDisplayFields} from "../../../lemlist-api/contacts"
-import {endpoints} from "../../../lemlist-api/endpoints"
-import {createLogger} from "../../../utils/logger"
+import type {LemlistApiError} from "../../lemlist-api/transport/lemlist"
+import {getContact, getContactDisplayFields} from "../../lemlist-api/contacts"
+import {endpoints} from "../../lemlist-api/endpoints"
+import {createLogger} from "../../common/logger"
 
 const logger = createLogger("open-in-lemlist")
 
@@ -22,16 +22,17 @@ export default async function openInLemlist(
     const contactResult = await getContact(email)
 
     if (isErrored(contactResult)) {
-        logger.error(
-            `Failed to get lemlist link by email: ${email} — ${contactResult.error.errorMessage}`
-        )
+        logger.error("Failed to get lemlist link by email", {
+            email,
+            error: contactResult.error,
+        })
         return contactResult
     }
 
     const contact = contactResult.value
 
     if (contact === null) {
-        return errored({statusCode: 404, errorMessage: "Contact not found in lemlist"})
+        return errored({code: "NOT_FOUND", detail: "no contact for that email"})
     }
 
     const {company, description, tagline, phone, skills} = getContactDisplayFields(contact)

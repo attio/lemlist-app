@@ -7,9 +7,9 @@ import {
     Extensions,
 } from "attio/client"
 import getCurrentUser from "../../../graphql/get-current-user.graphql"
-import {pluralize} from "../../../utils/pluralize"
-import resolveContactOwnerServer from "../../../utils/resolve-contact-owner.server"
-import addPeopleToCampaign from "../../../record/bulk-actions/add-to-campaign/add-people-to-campaign.server"
+import {pluralize} from "../../../common/pluralize"
+import resolveContactOwnerServer from "../../server-functions/resolve-contact-owner.server"
+import addPeopleToCampaign from "../../server-functions/add-people-to-campaign.server"
 import BulkAddToCampaignDialog, {
     type BulkAddFormValues,
 } from "../../../record/bulk-actions/add-to-campaign/bulk-add-to-campaign-dialog"

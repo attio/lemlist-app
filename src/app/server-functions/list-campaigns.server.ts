@@ -1,6 +1,6 @@
 import {isErrored} from "@attio/fetchable"
-import {listCampaigns} from "../lemlist-api/campaigns"
-import {createLogger} from "./logger"
+import {listCampaigns} from "../../lemlist-api/campaigns"
+import {createLogger} from "../../common/logger"
 
 const logger = createLogger("list-campaigns")
 
@@ -10,7 +10,7 @@ export default async function listCampaignsForBlock(): Promise<
     const result = await listCampaigns()
 
     if (isErrored(result)) {
-        logger.error(`Failed to list campaigns: ${result.error.errorMessage}`)
+        logger.error("Failed to list campaigns", {error: result.error})
         return []
     }
 

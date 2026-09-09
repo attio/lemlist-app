@@ -1,4 +1,4 @@
-import {LEMLIST_API_BASE_URL} from "./endpoints"
+import {LEMLIST_API_BASE_URL} from "../endpoints"
 
 export type QueryParams = Record<
     string,

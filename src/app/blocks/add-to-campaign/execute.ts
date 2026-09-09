@@ -6,9 +6,10 @@ import {
     mergeAddLeadQueryParams,
 } from "../../../lemlist-api/campaigns"
 import {resolveContactOwner} from "../../../lemlist-api/resolve-contact-owner"
-import {createLogger} from "../../../utils/logger"
-import type {LemlistPerson} from "../../../utils/person-for-campaign"
+import {createLogger} from "../../../common/logger"
+import type {LemlistPerson} from "../../../lemlist-api/person-for-campaign"
 import block from "./block"
+import {isRetryable, lemlistErrorMessage} from "../../../lemlist-api/transport/error"
 
 const logger = createLogger("AddToCampaign step - execute")
 
@@ -31,7 +32,8 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config, metad
         })
         return {
             type: "error",
-            errorMessage: ownerResult.error.errorMessage,
+            errorMessage: lemlistErrorMessage(ownerResult.error),
+            retryable: isRetryable(ownerResult.error),
         }
     }
     if (ownerResult.value.warning) {
@@ -81,7 +83,8 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config, metad
 
         return {
             type: "error",
-            errorMessage: result.error.errorMessage,
+            errorMessage: lemlistErrorMessage(result.error),
+            retryable: isRetryable(result.error),
         }
     }
 

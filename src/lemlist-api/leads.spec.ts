@@ -11,13 +11,13 @@ const lemlistApiMocks = vi.hoisted((): LemlistApiMocks => ({
     },
 }))
 
-vi.mock("./client", () => ({
+vi.mock("./transport/lemlist", () => ({
     lemlistApi: {
         get: lemlistApiMocks.mockLemlistGet,
         post: lemlistApiMocks.mockLemlistPost,
     },
 }))
-vi.mock("../utils/logger", () => ({
+vi.mock("../common/logger", () => ({
     createLogger: () => lemlistApiMocks.mockLogger,
 }))
 
@@ -59,7 +59,7 @@ describe("getLeadByEmail", () => {
     })
 
     it("returns empty array on 404", async () => {
-        mockLemlistGet.mockResolvedValue(errored({statusCode: 404, errorMessage: "Not found"}))
+        mockLemlistGet.mockResolvedValue(errored({code: "NOT_FOUND", detail: "not found"}))
 
         const result = await getLeadByEmail("nobody@example.com")
 
@@ -70,14 +70,14 @@ describe("getLeadByEmail", () => {
     })
 
     it("propagates non-404 API errors", async () => {
-        const apiError = {statusCode: 500, errorMessage: "Server error"}
+        const apiError = {code: "LEMLIST_SERVER_ERROR" as const, detail: "server error"}
         mockLemlistGet.mockResolvedValue(errored(apiError))
 
         const result = await getLeadByEmail("jane@example.com")
 
         expect(result).toEqual(errored(apiError))
         expect(mockLogger.error).toHaveBeenCalledWith("Failed to fetch lead by email", {
-            statusCode: 500,
+            error: apiError,
         })
     })
 
@@ -88,8 +88,7 @@ describe("getLeadByEmail", () => {
 
         expect(isErrored(result)).toBe(true)
         if (isErrored(result)) {
-            expect(result.error.statusCode).toBe(0)
-            expect(result.error.errorMessage).toBe("Unexpected response from lemlist API")
+            expect(result.error.code).toBe("UNEXPECTED_RESPONSE")
         }
     })
 
@@ -168,15 +167,15 @@ describe("pauseLead", () => {
     })
 
     it("propagates API errors", async () => {
-        const apiError = {statusCode: 500, errorMessage: "Server error"}
+        const apiError = {code: "LEMLIST_SERVER_ERROR" as const, detail: "server error"}
         mockLemlistPost.mockResolvedValue(errored(apiError))
 
         const result = await pauseLead("lea_fiDpiGV585wy3Oii2")
 
         expect(result).toEqual(errored(apiError))
         expect(mockLogger.error).toHaveBeenCalledWith("Failed to pause lead", {
-            statusCode: 500,
             leadId: "lea_fiDpiGV585wy3Oii2",
+            error: apiError,
         })
     })
 
@@ -187,8 +186,7 @@ describe("pauseLead", () => {
 
         expect(isErrored(result)).toBe(true)
         if (isErrored(result)) {
-            expect(result.error.statusCode).toBe(0)
-            expect(result.error.errorMessage).toBe("Unexpected response from lemlist API")
+            expect(result.error.code).toBe("UNEXPECTED_RESPONSE")
         }
     })
 })

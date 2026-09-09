@@ -1,8 +1,12 @@
 import type {ZodError} from "zod"
 
+/**
+ * Only the field paths. Zod messages quote the value they rejected, which can carry lead
+ * details we must not log.
+ */
 function formatIssues(error: ZodError): string {
     return error.issues
-        .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
+        .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.code}`)
         .join("; ")
 }
 

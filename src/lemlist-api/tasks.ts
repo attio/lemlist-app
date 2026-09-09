@@ -1,9 +1,9 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
 import {ErrorCode, errorMessage} from "../error-codes"
-import {createLogger} from "../utils/logger"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {createLogger} from "../common/logger"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
+import {schemaParseError} from "./transport/error"
 import {
     type LemlistCreateTaskRequest,
     LemlistCreateTaskRequestSchema,
@@ -24,9 +24,8 @@ export async function createTask(
     if (!body.success) {
         logger.error(`Invalid create task request: ${body.error.message}`)
         return errored({
-            statusCode: 0,
-            data: undefined,
-            errorMessage: errorMessage(ErrorCode.CreateTaskInvalidRequest),
+            code: "INVALID_REQUEST",
+            detail: errorMessage(ErrorCode.CreateTaskInvalidRequest),
         })
     }
 

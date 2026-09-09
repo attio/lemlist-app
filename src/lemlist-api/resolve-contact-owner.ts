@@ -1,5 +1,5 @@
 import {type AsyncResult, complete, isErrored} from "@attio/fetchable"
-import {type LemlistApiError} from "./client"
+import {type LemlistApiError} from "./transport/lemlist"
 import type {LemlistUser} from "./schemas"
 import {getTeamMembers} from "./team"
 

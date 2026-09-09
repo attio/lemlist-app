@@ -1,17 +1,19 @@
 import {complete, errored} from "@attio/fetchable"
 import {beforeEach, describe, expect, it, vi} from "vitest"
-import {defaultAddLeadParams, sampleLeadResponse} from "../../../../test/utils/fixtures"
-import {createLeadInCampaign, getAddLeadQueryParams} from "../../../lemlist-api/campaigns"
-import type {LemlistPerson} from "../../../utils/person-for-campaign"
+import {defaultAddLeadParams, sampleLeadResponse} from "../../../test/utils/fixtures"
+import {createLeadInCampaign, getAddLeadQueryParams} from "../../lemlist-api/campaigns"
+import type {LemlistPerson} from "../../lemlist-api/person-for-campaign"
 import addPeopleToCampaign from "./add-people-to-campaign.server"
-import {loadPeopleForCampaign} from "./load-people-for-campaign"
+import {loadPeopleForCampaign} from "../../record/bulk-actions/add-to-campaign/load-people-for-campaign"
 
-vi.mock("./load-people-for-campaign", () => ({loadPeopleForCampaign: vi.fn()}))
-vi.mock("../../../lemlist-api/campaigns", () => ({
+vi.mock("../../record/bulk-actions/add-to-campaign/load-people-for-campaign", () => ({
+    loadPeopleForCampaign: vi.fn(),
+}))
+vi.mock("../../lemlist-api/campaigns", () => ({
     createLeadInCampaign: vi.fn(),
     getAddLeadQueryParams: vi.fn(),
 }))
-vi.mock("../../../utils/logger", () => ({
+vi.mock("../../common/logger", () => ({
     createLogger: () => ({log: vi.fn(), error: vi.fn()}),
 }))
 
@@ -75,7 +77,9 @@ describe("addPeopleToCampaign", () => {
         mockLoadPeople.mockResolvedValue(
             complete(new Map([["ok", complete(person("ok@example.com"))]]))
         )
-        mockCreateLead.mockResolvedValue(errored({statusCode: 422, errorMessage: "Lead rejected"}))
+        mockCreateLead.mockResolvedValue(
+            errored({code: "INVALID_REQUEST", detail: "lead rejected"})
+        )
 
         const outcomes = await addPeopleToCampaign({
             recordIds: ["ok"],
@@ -83,7 +87,13 @@ describe("addPeopleToCampaign", () => {
             contactOwner: "usr_alice",
         })
 
-        expect(outcomes).toEqual([{recordId: "ok", status: "error", errorMessage: "Lead rejected"}])
+        expect(outcomes).toEqual([
+            {
+                recordId: "ok",
+                status: "error",
+                errorMessage: "lemlist rejected the request.",
+            },
+        ])
     })
 
     it("reports every record as an error when the whole batch fails to load", async () => {

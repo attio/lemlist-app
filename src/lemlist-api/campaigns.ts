@@ -1,11 +1,11 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
 import {getWorkspaceSettings} from "attio/server"
-import {createLogger} from "../utils/logger"
-import {buildContactBody, buildLeadBody, type LemlistPerson} from "../utils/person-for-campaign"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {createLogger} from "../common/logger"
+import {buildContactBody, buildLeadBody, type LemlistPerson} from "./person-for-campaign"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {upsertContact} from "./contacts"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
+import {schemaParseError} from "./transport/error"
 import {
     type AddLeadQueryParams,
     getEffectiveEnrichmentParams,
@@ -180,9 +180,10 @@ export async function createLeadInCampaign({
         )
 
         if (isErrored(enrichResult)) {
-            logger.error(
-                `Lead ${parsed.data._id} was added but enrichment failed: ${enrichResult.error.errorMessage}`
-            )
+            logger.error("Lead was added but enrichment failed", {
+                leadId: parsed.data._id,
+                error: enrichResult.error,
+            })
         }
     }
 

@@ -1,6 +1,6 @@
 import {runQuery, showDialog, showToast, Extensions} from "attio/client"
 import getPersonSummaryWithUser from "../../../graphql/get-person-summary-with-user.graphql"
-import {getPrimaryEmail} from "../../../utils/attio"
+import {getPrimaryEmail} from "../../../attio/primary-email"
 import AddToCampaignDialog from "../../../record/actions/add-to-campaign/add-to-campaign-dialog"
 
 export default Extensions.defineExtension({

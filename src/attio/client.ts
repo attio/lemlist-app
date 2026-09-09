@@ -1,6 +1,6 @@
 import {type AsyncResult, complete, errored, fromPromise, isErrored} from "@attio/fetchable"
 import {ATTIO_API_TOKEN} from "attio/server"
-import {createLogger} from "../utils/logger"
+import {createLogger} from "../common/logger"
 import type {AttioApiError} from "./error"
 
 const ATTIO_API_BASE_URL = "https://api.attio.com"

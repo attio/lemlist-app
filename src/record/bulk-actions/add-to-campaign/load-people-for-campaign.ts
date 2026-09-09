@@ -3,8 +3,11 @@ import {getCompaniesByRecordIds} from "../../../attio/companies"
 import type {AttioApiError} from "../../../attio/error"
 import {getPeopleByRecordIds} from "../../../attio/people"
 import type {AttioCompany, AttioPerson} from "../../../attio/schemas"
-import {createLogger} from "../../../utils/logger"
-import {attioRecordToLemlistPerson, type LemlistPerson} from "../../../utils/person-for-campaign"
+import {createLogger} from "../../../common/logger"
+import {
+    attioRecordToLemlistPerson,
+    type LemlistPerson,
+} from "../../../lemlist-api/person-for-campaign"
 
 const logger = createLogger("load-people-for-campaign")
 

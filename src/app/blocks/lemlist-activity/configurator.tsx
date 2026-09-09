@@ -1,5 +1,5 @@
 import {useAsyncCache, Workflows} from "attio/client"
-import listCampaignsForBlock from "../../../utils/list-campaigns.server"
+import listCampaignsForBlock from "../../server-functions/list-campaigns.server"
 import block from "./block"
 import {hasCampaignFilter, optionsProvider} from "./options"
 import {getOutcomeSchema} from "./outcome-schema"

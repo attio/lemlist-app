@@ -1,14 +1,14 @@
 import {Workflows} from "attio/server"
-import {handleEnrichmentWebhook} from "../../../utils/enrichment-execution"
+import {parseEnrichmentFinishPayload} from "../../../services/enrichment/parse-enrichment-finish"
 import {clearStoredExecution} from "../../../utils/enrichment-storage"
-import {createLogger} from "../../../utils/logger"
+import {createLogger} from "../../../common/logger"
 import block from "./block"
 
 const logger = createLogger("FindEmail step - finish")
 
 export default Workflows.defineWorkflowBlockFinish(block, async (req, {metadata}) => {
     const {uniqueExecutionId} = metadata
-    const result = await handleEnrichmentWebhook({req, uniqueExecutionId, logger})
+    const result = await parseEnrichmentFinishPayload(req, uniqueExecutionId, logger)
 
     if (result.type === "no-op") return result
 

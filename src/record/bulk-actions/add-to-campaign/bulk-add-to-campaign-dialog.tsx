@@ -10,9 +10,10 @@ import {
 } from "attio/client"
 import {Suspense} from "react"
 import type {LemlistCampaign} from "../../../lemlist-api/schemas"
-import {createCampaignsProvider} from "../../../utils/hooks/use-campaigns-provider"
+import {createCampaignsProvider} from "../../../hooks/use-campaigns-provider"
 import {buildFormConfig} from "../../actions/add-to-campaign/campaign-form-utils"
-import listCampaignsForDialog from "../../actions/add-to-campaign/list-campaigns-for-dialog.server"
+import listCampaignsForDialog from "../../../app/server-functions/list-campaigns-for-dialog.server"
+import {lemlistErrorMessage} from "../../../lemlist-api/transport/error"
 
 export type BulkAddFormValues = {
     campaignId: string
@@ -84,7 +85,7 @@ function BulkAddToCampaignDialogLoaded({
     if (isErrored(campaigns)) {
         return (
             <>
-                <Banner variant="error">{campaigns.error.errorMessage}</Banner>
+                <Banner variant="error">{lemlistErrorMessage(campaigns.error)}</Banner>
                 <Button label="Close" onClick={hideDialog} />
             </>
         )

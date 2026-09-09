@@ -1,7 +1,7 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
+import {schemaParseError} from "./transport/error"
 import {type LemlistCompany, LemlistCompanyListSchema} from "./schemas"
 
 /**

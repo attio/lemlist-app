@@ -1,8 +1,8 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {createLogger} from "../utils/logger"
-import {type LemlistApiError, lemlistApi} from "./client"
+import {createLogger} from "../common/logger"
+import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./error"
+import {schemaParseError} from "./transport/error"
 import {
     type LemlistContact,
     LemlistContactSchema,
@@ -79,7 +79,7 @@ export async function getContact(
     const responseResult = await lemlistApi.get(endpoints.api.contact(idOrEmail.trim()))
 
     if (isErrored(responseResult)) {
-        if (responseResult.error.statusCode === 404) {
+        if (responseResult.error.code === "NOT_FOUND") {
             return complete(null)
         }
 

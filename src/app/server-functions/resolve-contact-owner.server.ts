@@ -1,5 +1,9 @@
 import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
-import {type ResolvedContactOwner, resolveContactOwner} from "../lemlist-api/resolve-contact-owner"
+import {
+    type ResolvedContactOwner,
+    resolveContactOwner,
+} from "../../lemlist-api/resolve-contact-owner"
+import {lemlistErrorMessage} from "../../lemlist-api/transport/error"
 
 export type ResolveContactOwnerServerError = {errorMessage: string}
 
@@ -14,7 +18,7 @@ export default async function resolveContactOwnerServer(
 ): AsyncResult<ResolvedContactOwner, ResolveContactOwnerServerError> {
     const result = await resolveContactOwner({owner})
     if (isErrored(result)) {
-        return errored({errorMessage: result.error.errorMessage})
+        return errored({errorMessage: lemlistErrorMessage(result.error)})
     }
     return complete(result.value)
 }

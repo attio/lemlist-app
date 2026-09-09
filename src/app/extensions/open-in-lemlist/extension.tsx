@@ -1,8 +1,8 @@
 import {isErrored} from "@attio/fetchable"
 import {runQuery, showDialog, showToast, Extensions} from "attio/client"
 import getPersonSummary from "../../../graphql/get-person-summary.graphql"
-import {getPrimaryEmail} from "../../../utils/attio"
-import openInLemlist from "../../../record/actions/open-in-lemlist/open-in-lemlist.server"
+import {getPrimaryEmail} from "../../../attio/primary-email"
+import openInLemlist from "../../server-functions/open-in-lemlist.server"
 import OpenInLemlistDialog from "../../../record/actions/open-in-lemlist/open-in-lemlist-dialog"
 
 export default Extensions.defineExtension({

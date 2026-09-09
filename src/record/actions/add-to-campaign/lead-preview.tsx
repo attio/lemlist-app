@@ -1,7 +1,7 @@
 import {isErrored} from "@attio/fetchable"
 import {Banner, DescriptionList, Link, LoadingState, useAsyncCache} from "attio/client"
 import {Suspense} from "react"
-import getLeadPreview from "./get-lead-preview.server"
+import getLeadPreview from "../../../app/server-functions/get-lead-preview.server"
 
 type Props = {
     /** Attio record ID of the person whose lemlist payload should be previewed. */
