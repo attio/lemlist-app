@@ -74,10 +74,6 @@ function isRecentTimestamp(value: unknown): boolean {
     return typeof value === "number" && Date.now() - value < VERIFY_TTL_MS
 }
 
-function trackedIdsOf(webhooks: readonly RegisteredWebhook[]): ReadonlySet<string> {
-    return new Set(webhooks.map((webhook) => webhook.lemlistWebhookId))
-}
-
 export function retainLiveEnrichmentWebhooks<T extends {lemlistWebhookId: string}>(
     registered: readonly T[],
     listed: readonly LemlistWebhook[]
@@ -89,10 +85,7 @@ export function retainLiveEnrichmentWebhooks<T extends {lemlistWebhookId: string
     return registered.filter((webhook) => liveIds.has(webhook.lemlistWebhookId))
 }
 
-async function listAndSweepOrphans(
-    registered: readonly RegisteredWebhook[],
-    connection?: Connection
-): Promise<LemlistWebhook[] | null> {
+async function listAndSweepOrphans(connection?: Connection): Promise<LemlistWebhook[] | null> {
     const listed = await listWebhooks(connection)
 
     if (isErrored(listed)) {
@@ -102,11 +95,7 @@ async function listAndSweepOrphans(
 
     await kv.set(VERIFIED_AT_KEY, Date.now())
 
-    await deleteOrphanedEnrichmentWebhooksFrom({
-        webhooks: listed.value,
-        trackedIds: trackedIdsOf(registered),
-        connection,
-    })
+    await deleteOrphanedEnrichmentWebhooksFrom({webhooks: listed.value, connection})
 
     return listed.value
 }
@@ -124,7 +113,7 @@ async function dropDeadRegistrations({
         return registered
     }
 
-    const listed = await listAndSweepOrphans(registered, connection)
+    const listed = await listAndSweepOrphans(connection)
     if (!listed) {
         return registered
     }
@@ -167,11 +156,9 @@ async function createHandlerAndWebhook({
 async function registerWebhookForEvent({
     connection,
     eventType,
-    trackedIds,
 }: {
     connection?: Connection
     eventType: EnrichmentEventType
-    trackedIds: ReadonlySet<string>
 }): AsyncResult<RegisteredWebhook, LemlistApiError> {
     const firstAttempt = await createHandlerAndWebhook({connection, eventType})
 
@@ -188,7 +175,7 @@ async function registerWebhookForEvent({
     if (isErrored(listed)) {
         logger.error("Could not check enrichment webhooks before retrying")
     } else {
-        await deleteOrphanedEnrichmentWebhooksFrom({webhooks: listed.value, trackedIds, connection})
+        await deleteOrphanedEnrichmentWebhooksFrom({webhooks: listed.value, connection})
     }
 
     return createHandlerAndWebhook({connection, eventType})
@@ -210,11 +197,7 @@ async function createMissingWebhooks({
     const webhooks = [...existing]
 
     for (const eventType of missingEventTypes) {
-        const result = await registerWebhookForEvent({
-            connection,
-            eventType,
-            trackedIds: trackedIdsOf(webhooks),
-        })
+        const result = await registerWebhookForEvent({connection, eventType})
 
         if (isErrored(result)) {
             // Save what did work so the next call only retries what is missing.
@@ -262,7 +245,7 @@ async function registerAppWebhooks({
 
     await kv.set(VERIFIED_AT_KEY, Date.now())
 
-    const listed = await listAndSweepOrphans(registered, connection)
+    const listed = await listAndSweepOrphans(connection)
     const live = listed ? retainLiveEnrichmentWebhooks(registered, listed) : registered
 
     return createMissingWebhooks({existing: live, connection})

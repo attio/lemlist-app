@@ -213,7 +213,8 @@ export const LemlistWebhookSchema = z.object({
     _id: z.string(),
     targetUrl: z.string(),
     createdAt: z.string(),
-    type: LemlistWebhookEventTypeSchema.optional(),
+    // Plain string, not LemlistWebhookEventTypeSchema: this also lists webhooks we didn't create.
+    type: z.string().optional(),
     campaignId: z.string().optional(),
     disabled: z.boolean().optional(),
 })

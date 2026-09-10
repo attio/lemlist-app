@@ -54,7 +54,7 @@ four enrichment blocks now share one webhook per install instead.
 | File                                               | Role                                                                      |
 | -------------------------------------------------- | ------------------------------------------------------------------------- |
 | `src/services/enrichment/register-webhooks.ts`     | Registers the shared webhooks and tracks them in KV                       |
-| `src/services/enrichment/orphaned-webhooks.ts`     | Orphan-detection logic all enrichment webhook cleanup uses                |
+| `src/services/enrichment/orphaned-webhooks.ts`     | Disabled-webhook detection all enrichment webhook cleanup uses            |
 | `src/services/enrichment/callback-store.ts`        | Maps a lemlist enrichment id to the run's `finishCallbackUrl`             |
 | `src/services/enrichment/execute-enrichment.ts`    | Starts an enrichment and records where its result should go               |
 | `src/services/enrichment/parse-enrichment-finish.ts` | Reads the payload a `finish.ts` handler receives                        |
@@ -78,20 +78,22 @@ on the once-a-minute cadence above. There is no "already cleaned" marker — swe
 to repeat, so both paths just do it every time they run.
 
 Stamping `verified-at` before creating is a best-effort lock, not a hard one — `kv` has no
-compare-and-swap, so two runs can both see it unset and both create a pair. Cleanup catches
-the result: past a grace window, an enabled `enrichmentDone`/`enrichmentError` webhook that
-is not in KV and sits on our own workspace (read off a webhook we do have tracked, never
-guessed) is a race-created duplicate, since exactly one of each is meant to exist. A
-collision self-heals on the next sweep instead of leaking a slot forever.
+compare-and-swap, so two runs can both see it unset and both create a pair. Cleanup does
+**not** try to catch that: an enabled `enrichmentDone`/`enrichmentError` webhook matching our
+type, host, and workspace is not proof it came from our own registration code — someone
+could point their own webhook at the same shape of URL — so it is never deleted just for
+looking like an untracked duplicate. A race-created pair only clears once lemlist disables
+one of them, which the disabled-webhook cleanup below then picks up. Until then it counts
+against the 200 cap like any other webhook.
 
 Two rules when working here:
 
 - Never register a webhook per execution or per run.
-- Cleanup deletes `enrichmentDone` / `enrichmentError` webhooks on an Attio callback host
-  that are either disabled, or enabled-but-untracked on our own workspace and past the
-  grace window. Loosening any of those conditions risks deleting a live webhook, one
-  belonging to the customer, or one belonging to a different workspace that happens to
-  share this lemlist account. The spec next to it pins this down.
+- Cleanup only deletes `enrichmentDone` / `enrichmentError` webhooks on an Attio callback
+  host that lemlist has disabled. It never deletes an enabled webhook, tracked or not —
+  loosening that risks deleting a live webhook belonging to the customer, another
+  workspace, or another integration that happens to share this lemlist account. The spec
+  next to it pins this down.
 
 `lemlist-activity` triggers are a separate system (`webhook-lifecycle.ts` beside that block): one webhook
 per active trigger, removed on deactivation. Don't merge the two.

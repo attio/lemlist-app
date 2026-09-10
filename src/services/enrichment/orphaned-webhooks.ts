@@ -22,29 +22,11 @@ export const CLEANUP_TIME_BUDGET_MS = 10_000
  */
 const DELETE_REQUEST_SPACING_MS = 110
 
-/**
- * A run that just created this webhook may not have written it to KV yet. A retry of the
- * same block does not extend this: it only waits and rereads KV, it never creates on the
- * original run's behalf, so a webhook can only ever be written by the single run that
- * created it. That bounds the wait to one 30s server timeout, not the retry sequence.
- */
-const DUPLICATE_GRACE_MS = 30_000
-
 function isAttioCallbackUrl(targetUrl: string): boolean {
     try {
         return new URL(targetUrl).hostname === ATTIO_CALLBACK_HOSTNAME
     } catch {
         return false
-    }
-}
-
-/** The `{workspaceId}` segment of an Attio app-webhook-handler URL (`/a/{workspaceId}/...`). */
-function workspaceIdFromTargetUrl(targetUrl: string): string | null {
-    try {
-        const [, prefix, workspaceId] = new URL(targetUrl).pathname.split("/")
-        return prefix === "a" ? (workspaceId ?? null) : null
-    } catch {
-        return null
     }
 }
 
@@ -61,54 +43,23 @@ export function isOrphanedEnrichmentWebhook(webhook: LemlistWebhook): boolean {
 }
 
 /**
- * There is only ever meant to be one enabled `enrichmentDone` and one enabled
- * `enrichmentError` webhook per workspace. Anything else enabled, on our own workspace
- * (never another one that happens to share this lemlist account), not in `trackedIds`,
- * and older than the grace window is a duplicate — almost always from two runs racing to
- * register at once.
+ * Deletes disabled enrichment webhooks from an already-fetched listing, reusing one
+ * `GET /hooks`.
  *
- * The workspace check needs one of our own webhooks to still be in `listed` to read a
- * workspace id from. If none are, this returns nothing rather than guessing.
+ * This deliberately does not try to detect and delete "duplicate" enabled enrichment
+ * webhooks left behind by a race between two runs registering at once. An enabled webhook
+ * matching our type, host, and workspace is not proof it came from our own registration
+ * code — someone could point their own webhook at the same shape of URL — so an enabled
+ * webhook is only ever removed by whoever owns it disabling it first.
  */
-export function findDuplicateEnrichmentWebhooks(
-    listed: readonly LemlistWebhook[],
-    trackedIds: ReadonlySet<string>
-): LemlistWebhook[] {
-    const ownWorkspaceId = listed
-        .filter((webhook) => trackedIds.has(webhook._id))
-        .map((webhook) => workspaceIdFromTargetUrl(webhook.targetUrl))
-        .find((workspaceId): workspaceId is string => workspaceId !== null)
-
-    if (!ownWorkspaceId) {
-        return []
-    }
-
-    const cutoff = Date.now() - DUPLICATE_GRACE_MS
-
-    return listed.filter(
-        (webhook) =>
-            isEnrichmentWebhook(webhook) &&
-            webhook.disabled !== true &&
-            !trackedIds.has(webhook._id) &&
-            workspaceIdFromTargetUrl(webhook.targetUrl) === ownWorkspaceId &&
-            new Date(webhook.createdAt).getTime() < cutoff
-    )
-}
-
-/** Deletes orphans and duplicates from an already-fetched listing, reusing one `GET /hooks`. */
 export async function deleteOrphanedEnrichmentWebhooksFrom({
     webhooks,
-    trackedIds,
     connection,
 }: {
     webhooks: readonly LemlistWebhook[]
-    trackedIds: ReadonlySet<string>
     connection?: Connection
 }): Promise<void> {
-    const orphans = [
-        ...webhooks.filter(isOrphanedEnrichmentWebhook),
-        ...findDuplicateEnrichmentWebhooks(webhooks, trackedIds),
-    ]
+    const orphans = webhooks.filter(isOrphanedEnrichmentWebhook)
 
     const startedAt = Date.now()
     let deletedCount = 0
