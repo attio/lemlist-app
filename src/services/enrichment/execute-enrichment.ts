@@ -43,6 +43,42 @@ function isAttioEgressError(error: LemlistApiError): boolean {
     )
 }
 
+const CALLBACK_STORE_ATTEMPTS = 6
+const CALLBACK_STORE_SPACING_MS = 400
+
+/**
+ * Retried here rather than by the block: lemlist has already been paid by this point, and
+ * a block retry re-runs enrichContact, charging for a second enrichment. Every failure is
+ * caught for that reason, not just the egress limit.
+ */
+async function storeCallbackWithRetries(
+    enrichmentId: string,
+    finishCallbackUrl: string,
+    logger: Logger
+): AsyncResult<void, LemlistApiError> {
+    for (let attempt = 1; attempt <= CALLBACK_STORE_ATTEMPTS; attempt++) {
+        if (attempt > 1) {
+            await new Promise((resolve) => setTimeout(resolve, CALLBACK_STORE_SPACING_MS))
+        }
+
+        try {
+            await storeEnrichmentCallback({enrichmentId, finishCallbackUrl})
+
+            return complete(undefined)
+        } catch (error) {
+            logger.error(
+                `Could not record where enrichment ${enrichmentId} reports back to (attempt ${attempt})`,
+                error
+            )
+        }
+    }
+
+    return errored({
+        code: "UNEXPECTED_ERROR",
+        detail: "the enrichment started but its result could not be routed back",
+    })
+}
+
 export async function executeEnrichment({
     enrichInput,
     enrichOptions,
@@ -74,15 +110,19 @@ export async function executeEnrichment({
 
         const enrichmentId = enrichment.value
 
-        await storeEnrichmentCallback({enrichmentId, finishCallbackUrl})
+        const stored = await storeCallbackWithRetries(enrichmentId, finishCallbackUrl, logger)
+
+        if (isErrored(stored)) {
+            return stored
+        }
 
         logger.log(`Started enrichment ${enrichmentId}`)
 
         return complete(enrichmentId)
     } catch (error) {
-        // ensureEnrichmentWebhooks and storeEnrichmentCallback also make plain Attio SDK
-        // calls (kv, webhook handlers) outside the lemlist client, so an egress-limit
-        // throw from either surfaces as a raw exception rather than a LemlistApiError.
+        // ensureEnrichmentWebhooks also makes plain Attio SDK calls (kv, webhook handlers)
+        // outside the lemlist client, so an egress-limit throw there surfaces as a raw
+        // exception rather than a LemlistApiError. Safe to retry: nothing is charged yet.
         if (!isAttioEgressException(error)) {
             throw error
         }
