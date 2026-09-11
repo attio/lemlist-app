@@ -98,10 +98,6 @@ Two rules when working here:
 `lemlist-activity` triggers are a separate system (`webhook-lifecycle.ts` beside that block): one webhook
 per active trigger, removed on deactivation. Don't merge the two.
 
-`parseEnrichmentFinishPayload` still accepts lemlist's raw per-run payload so enrichments
-in flight at deploy can finish. That shim, and `uniqueExecutionId` / `no-op` on the four
-`finish.ts` files, go away in the follow-up PR.
-
 ## Environment
 
 ### Client-side code
