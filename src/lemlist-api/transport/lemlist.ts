@@ -2,7 +2,7 @@ import {type AsyncResult, complete, errored} from "@attio/fetchable"
 import {type Connection, getWorkspaceConnection} from "attio/server"
 import {createLogger} from "../../common/logger"
 import {codeForStatus, type LemlistApiError, readErrorDetail} from "./error"
-import {buildAuthorizationHeader, buildUrl, type QueryParams} from "./url"
+import {buildAuthorizationHeader, buildUrl, redactUrlForLogging, type QueryParams} from "./url"
 
 // lemlist rate limit: 20 req/2s per API key.
 // Strategy: react to 429s rather than pre-throttle, pre-throttling requires shared state
@@ -66,8 +66,9 @@ async function request<T>(
 
         const url = buildUrl(path, options?.params)
         const response = await fetch(url, init)
+        const requestLabel = `${method} ${redactUrlForLogging(url)}`
 
-        logger.log(`${method} ${url} (${response.status})`)
+        logger.log(`${requestLabel} (${response.status})`)
 
         if (response.status === 429 && attempt < MAX_RETRIES) {
             // Retry-After is seconds; fall back to the rate limit window duration
@@ -82,7 +83,7 @@ async function request<T>(
         if (!response.ok) {
             return errored({
                 code: codeForStatus(response.status),
-                detail: await readErrorDetail(response, `${method} ${url}`),
+                detail: await readErrorDetail(response, requestLabel),
             })
         }
 

@@ -29,3 +29,40 @@ export function buildUrl(path: string, params?: QueryParams): string {
 
     return url.toString()
 }
+
+function decodePathSegment(segment: string): string {
+    try {
+        return decodeURIComponent(segment)
+    } catch {
+        return segment
+    }
+}
+
+const REDACTED_QUERY_PARAMS = new Set([
+    "email",
+    "phone",
+    "linkedinurl",
+    "firstname",
+    "lastname",
+    "companyname",
+    "companydomain",
+    "webhookurl",
+])
+
+export function redactUrlForLogging(rawUrl: string): string {
+    const url = new URL(rawUrl)
+
+    url.pathname = url.pathname
+        .split("/")
+        .map((segment) => (decodePathSegment(segment).includes("@") ? "[REDACTED]" : segment))
+        .join("/")
+
+    for (const key of url.searchParams.keys()) {
+        if (REDACTED_QUERY_PARAMS.has(key.toLowerCase())) {
+            url.searchParams.set(key, "[REDACTED]")
+        }
+    }
+
+    // Keep redaction markers human-readable rather than percent-encoding their brackets.
+    return url.toString().replace(/%5B/g, "[").replace(/%5D/g, "]")
+}

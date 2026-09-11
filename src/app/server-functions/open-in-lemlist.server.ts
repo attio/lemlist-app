@@ -23,7 +23,6 @@ export default async function openInLemlist(
 
     if (isErrored(contactResult)) {
         logger.error("Failed to get lemlist link by email", {
-            email,
             error: contactResult.error,
         })
         return contactResult
