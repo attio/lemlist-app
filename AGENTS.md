@@ -86,6 +86,8 @@ looking like an untracked duplicate. A race-created pair only clears once lemlis
 one of them, which the disabled-webhook cleanup below then picks up. Until then it counts
 against the 200 cap like any other webhook.
 
+lemlist answers `402` on `/hooks` when the account's plan does not include it. lemlist does not document which plan that is, so nothing here names one. Registration at connect time is therefore best effort. `connection-added.event.ts` logs every failure and never throws: a throw leaves the connection unsaved, and campaigns, tasks, leads and the record and bulk actions all work without a webhook. Nothing is lost by connecting without the pair, because `executeEnrichment` calls `ensureEnrichmentWebhooks` before every enrichment. The first run that needs the pair creates it. `registerAppWebhooks` drops the `verified-at` stamp when lemlist refuses in a way retrying cannot clear (`402`, `401`, `403`). Without that, every run for the next minute waits out the cleanup budget and reports `RETRY` instead of the real cause. A `409` keeps the stamp, because a later attempt can still succeed and the stamp has to throttle a bulk until one does.
+
 Two rules when working here:
 
 - Never register a webhook per execution or per run.
@@ -155,7 +157,7 @@ Two rules the transport layer exists to protect:
 
 - Never dump raw JSON, HTTP status codes, or square brackets in UI error messages
 - Never expose transport-layer details — say "An unexpected error occurred when calling lemlist's API" not "503 from lemlist"
-- Auth errors must name the missing scope and tell the user where to configure it (e.g. "Your lemlist API key is missing the 'Campaigns: Read' permission. Update it at app.lemlist.com → Settings → API")
+- Auth errors must tell the user where to fix it (app.lemlist.com). Name the missing scope or plan only when lemlist says which one it is. It does not say on `402` or `403`, so those messages stay general.
 - Set the workflow `retryable` flag from `isRetryable`. Do not special-case creates. The client already retries 429s in-process against Retry-After.
 
 ## Validation commands

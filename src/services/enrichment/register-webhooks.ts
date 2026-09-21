@@ -8,7 +8,7 @@ import {
 } from "attio/server"
 import {z} from "zod"
 import type {LemlistWebhook} from "../../lemlist-api/schemas"
-import type {LemlistApiError} from "../../lemlist-api/transport/error"
+import type {LemlistApiError, LemlistErrorCode} from "../../lemlist-api/transport/error"
 import {createWebhook, listWebhooks} from "../../lemlist-api/webhooks"
 import {createLogger} from "../../common/logger"
 import {deleteOrphanedEnrichmentWebhooksFrom, CLEANUP_TIME_BUDGET_MS} from "./orphaned-webhooks"
@@ -231,6 +231,15 @@ async function waitForOtherRunToRegister(): AsyncResult<void, LemlistApiError> {
     })
 }
 
+/**
+ * Refusals only the account owner can clear.
+ */
+const ACCOUNT_MUST_CHANGE: ReadonlySet<LemlistErrorCode> = new Set([
+    "PLAN_LIMITED",
+    "UNAUTHORIZED",
+    "FORBIDDEN",
+])
+
 async function registerAppWebhooks({
     registered,
     connection,
@@ -248,7 +257,13 @@ async function registerAppWebhooks({
     const listed = await listAndSweepOrphans(connection)
     const live = listed ? retainLiveEnrichmentWebhooks(registered, listed) : registered
 
-    return createMissingWebhooks({existing: live, connection})
+    const result = await createMissingWebhooks({existing: live, connection})
+
+    if (isErrored(result) && ACCOUNT_MUST_CHANGE.has(result.error.code)) {
+        await kv.delete(VERIFIED_AT_KEY)
+    }
+
+    return result
 }
 
 export async function ensureEnrichmentWebhooks(

@@ -10,10 +10,21 @@ vi.mock("../../lemlist-api/webhooks", () => ({
     listWebhooks: mocks.listWebhooks,
 }))
 
-import {complete, isErrored} from "@attio/fetchable"
-import {createWebhookHandler, deleteWebhookHandler, kv, updateWebhookHandler} from "attio/server"
+import {complete, errored, isErrored} from "@attio/fetchable"
+import {
+    createWebhookHandler,
+    deleteWebhookHandler,
+    type KVSerializable,
+    kv,
+    updateWebhookHandler,
+    type WebhookHandler,
+} from "attio/server"
 import type {LemlistWebhook} from "../../lemlist-api/schemas"
-import {ensureEnrichmentWebhooks, retainLiveEnrichmentWebhooks} from "./register-webhooks"
+import {
+    ENRICHMENT_WEBHOOK_HANDLER_FILE_NAME,
+    ensureEnrichmentWebhooks,
+    retainLiveEnrichmentWebhooks,
+} from "./register-webhooks"
 import {CLEANUP_TIME_BUDGET_MS} from "./orphaned-webhooks"
 
 function listed(overrides: Partial<LemlistWebhook> = {}): LemlistWebhook {
@@ -27,17 +38,25 @@ function listed(overrides: Partial<LemlistWebhook> = {}): LemlistWebhook {
     }
 }
 
-function inMemoryKv(initial: Record<string, unknown> = {}) {
-    const store = new Map(Object.entries(initial))
+function handler(overrides: Partial<WebhookHandler> = {}): WebhookHandler {
+    return {
+        id: "handler_1",
+        url: "https://hooks.attio.com/h1",
+        fileName: ENRICHMENT_WEBHOOK_HANDLER_FILE_NAME,
+        externalWebhookId: null,
+        ...overrides,
+    }
+}
+
+function inMemoryKv(initial: Record<string, KVSerializable> = {}) {
+    const store = new Map<string, KVSerializable>(Object.entries(initial))
 
     vi.mocked(kv.get).mockImplementation(async (key: string) => {
-        if (!store.has(key)) {
-            return null
-        }
+        const value = store.get(key)
 
-        return {value: store.get(key)}
+        return value === undefined ? null : {value}
     })
-    vi.mocked(kv.set).mockImplementation(async (key: string, value: unknown) => {
+    vi.mocked(kv.set).mockImplementation(async (key: string, value: KVSerializable) => {
         store.set(key, value)
     })
     vi.mocked(kv.delete).mockImplementation(async (key: string) => {
@@ -124,11 +143,38 @@ describe(ensureEnrichmentWebhooks, () => {
         expect(mocks.createWebhook).not.toHaveBeenCalled()
     })
 
+    it("releases the lock when lemlist refuses, so the next run reports the real cause", async () => {
+        const store = inMemoryKv()
+        vi.mocked(createWebhookHandler).mockResolvedValue(handler())
+        mocks.createWebhook.mockResolvedValue(errored({code: "PLAN_LIMITED", detail: null}))
+
+        const result = await ensureEnrichmentWebhooks()
+
+        expect(isErrored(result)).toBe(true)
+        if (isErrored(result)) {
+            expect(result.error.code).toBe("PLAN_LIMITED")
+        }
+        expect(store.has("enrichment-webhooks-verified-at")).toBe(false)
+    })
+
+    it("keeps the lock on a conflict, since a later attempt can still succeed", async () => {
+        const store = inMemoryKv()
+        vi.mocked(createWebhookHandler).mockResolvedValue(handler())
+        mocks.createWebhook.mockResolvedValue(errored({code: "CONFLICT", detail: null}))
+
+        await ensureEnrichmentWebhooks()
+
+        expect(store.has("enrichment-webhooks-verified-at")).toBe(true)
+    })
+
     it("creates the pair when nothing is stored yet", async () => {
         let handlers = 0
         vi.mocked(createWebhookHandler).mockImplementation(async () => {
             handlers += 1
-            return {id: `handler_${handlers}`, url: `https://hooks.attio.com/h${handlers}`}
+            return handler({
+                id: `handler_${handlers}`,
+                url: `https://hooks.attio.com/h${handlers}`,
+            })
         })
 
         let webhooks = 0

@@ -6,6 +6,8 @@ import {InvalidSchemaError} from "./schema-error"
 export type LemlistErrorCode =
     | "INVALID_REQUEST"
     | "UNAUTHORIZED"
+    /** `402`. lemlist does not document it. It means the plan does not include the route. */
+    | "PLAN_LIMITED"
     | "FORBIDDEN"
     | "NOT_FOUND"
     | "CONFLICT"
@@ -30,6 +32,8 @@ export function codeForStatus(status: number): LemlistErrorCode {
             return "INVALID_REQUEST"
         case 401:
             return "UNAUTHORIZED"
+        case 402:
+            return "PLAN_LIMITED"
         case 403:
             return "FORBIDDEN"
         case 404:
@@ -56,6 +60,7 @@ export function isRetryable(error: LemlistApiError): boolean {
             return true
         case "INVALID_REQUEST":
         case "UNAUTHORIZED":
+        case "PLAN_LIMITED":
         case "FORBIDDEN":
         case "NOT_FOUND":
         case "CONFLICT":
@@ -71,8 +76,10 @@ export function lemlistErrorMessage(error: LemlistApiError): string {
             return "lemlist rejected the request."
         case "UNAUTHORIZED":
             return "lemlist rejected the API key. Reconnect lemlist to fix this."
+        case "PLAN_LIMITED":
+            return "Your lemlist account does not have access to this feature. Check your plan and credits at app.lemlist.com."
         case "FORBIDDEN":
-            return "Your lemlist API key is missing a permission this needs. Update it at app.lemlist.com under Settings, API."
+            return "lemlist refused this request for your account. Check your account status at app.lemlist.com."
         case "NOT_FOUND":
             return "lemlist could not find what this step asked for."
         case "CONFLICT":

@@ -57,6 +57,7 @@ describe(codeForStatus, () => {
     })
 
     it("maps the statuses the app branches on", () => {
+        expect(codeForStatus(402)).toBe("PLAN_LIMITED")
         expect(codeForStatus(404)).toBe("NOT_FOUND")
         expect(codeForStatus(409)).toBe("CONFLICT")
         expect(codeForStatus(429)).toBe("RATE_LIMITED")
@@ -75,6 +76,7 @@ describe(isRetryable, () => {
     it("does not retry anything the caller has to fix first", () => {
         expect(isRetryable(apiError("INVALID_REQUEST"))).toBe(false)
         expect(isRetryable(apiError("UNAUTHORIZED"))).toBe(false)
+        expect(isRetryable(apiError("PLAN_LIMITED"))).toBe(false)
         expect(isRetryable(apiError("FORBIDDEN"))).toBe(false)
         expect(isRetryable(apiError("NOT_FOUND"))).toBe(false)
         expect(isRetryable(apiError("CONFLICT"))).toBe(false)
@@ -87,6 +89,7 @@ describe(lemlistErrorMessage, () => {
     const CODES = [
         "INVALID_REQUEST",
         "UNAUTHORIZED",
+        "PLAN_LIMITED",
         "FORBIDDEN",
         "NOT_FOUND",
         "CONFLICT",
@@ -111,5 +114,8 @@ describe(lemlistErrorMessage, () => {
     it("tells the member how to fix a permission problem", () => {
         expect(lemlistErrorMessage({code: "UNAUTHORIZED", detail: null})).toContain("Reconnect")
         expect(lemlistErrorMessage({code: "FORBIDDEN", detail: null})).toContain("app.lemlist.com")
+        expect(lemlistErrorMessage({code: "PLAN_LIMITED", detail: null})).toContain(
+            "app.lemlist.com"
+        )
     })
 })

@@ -1,9 +1,7 @@
 import {isErrored} from "@attio/fetchable"
 import type {Connection} from "attio/server"
 import {ensureEnrichmentWebhooks} from "../../services/enrichment/register-webhooks"
-import {isAttioEgressException} from "../../common/attio-egress"
 import {createLogger} from "../../common/logger"
-import {lemlistErrorMessage} from "../../lemlist-api/transport/error"
 
 const logger = createLogger("connection-added")
 
@@ -17,20 +15,18 @@ export default async function connectionAdded({connection}: {connection: Connect
 
     logger.log("Connection added, registering enrichment webhooks")
 
+    // A throw here leaves the connection unsaved, so the install fails. Most blocks work
+    // without these webhooks, so log the failure and carry on.
     try {
         // This connection is not saved yet, so it has to be passed explicitly.
         const result = await ensureEnrichmentWebhooks(connection)
 
         if (isErrored(result)) {
-            // Throwing leaves the connection unsaved and asks the user to try again. That
-            // beats connecting into a state where enrichment cannot work.
-            throw new Error(`${FAILED_PREFIX}: ${lemlistErrorMessage(result.error)}`)
+            logger.error(FAILED_PREFIX, result.error)
         }
     } catch (error) {
-        if (!isAttioEgressException(error)) {
-            throw error
-        }
-        logger.error("Attio's egress rate limit was hit registering enrichment webhooks", error)
-        throw new Error(`${FAILED_PREFIX}: Attio's rate limit was hit. Try again shortly.`)
+        // ensureEnrichmentWebhooks also calls the Attio SDK (kv, webhook handlers). Those
+        // calls throw instead of returning a result.
+        logger.error(FAILED_PREFIX, error)
     }
 }
