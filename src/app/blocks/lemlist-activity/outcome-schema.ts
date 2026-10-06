@@ -56,6 +56,22 @@ const linkedinOutcomeSchema = Workflows.OutcomeSchema.struct({
     linkedin_url: Workflows.OutcomeSchema.string().title("LinkedIn URL"),
 })
 
+/**
+ * Unsubscribes are contact events, so the outcome is keyed on the contact. lemlist adds the
+ * campaign when the contact unsubscribes from a campaign email, so those fields are optional.
+ *
+ * @see https://developer.lemlist.com/api-reference/endpoints/webhooks/add-webhook#webhook-payload
+ */
+const contactOutcomeSchema = Workflows.OutcomeSchema.struct({
+    contact_id: Workflows.OutcomeSchema.string().title("Contact ID"),
+    contact_email: Workflows.OutcomeSchema.emailAddress().optional().title("Contact email"),
+    contact_first_name: Workflows.OutcomeSchema.string().title("Contact first name"),
+    contact_last_name: Workflows.OutcomeSchema.string().title("Contact last name"),
+    campaign_id: Workflows.OutcomeSchema.string().optional().title("Campaign ID"),
+    campaign_name: Workflows.OutcomeSchema.string().optional().title("Campaign name"),
+    created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
+})
+
 export function getOutcomeSchema(eventType: string | undefined) {
     switch (eventType) {
         case "emailsSent":
@@ -85,6 +101,9 @@ export function getOutcomeSchema(eventType: string | undefined) {
         case "linkedinNotInterested":
         case "linkedinSendFailed":
             return linkedinOutcomeSchema
+
+        case "entityUnsubscribed":
+            return contactOutcomeSchema
 
         default:
             return baseOutcomeSchema

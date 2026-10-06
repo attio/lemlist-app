@@ -1,7 +1,7 @@
 import {useAsyncCache, Workflows} from "attio/client"
 import listCampaignsForBlock from "../../server-functions/list-campaigns.server"
 import block from "./block"
-import {hasCampaignFilter, optionsProvider} from "./options"
+import {optionsProvider} from "./options"
 import {getOutcomeSchema} from "./outcome-schema"
 
 export default Workflows.defineConfigurator(block, (workflowBlock) => {
@@ -28,15 +28,13 @@ export default Workflows.defineConfigurator(block, (workflowBlock) => {
                 disableVariables
                 options={optionsProvider}
             />
-            {hasCampaignFilter(eventType) && (
-                <ComboboxInput
-                    name="campaignId"
-                    label="Campaign"
-                    placeholder="Any campaign"
-                    disableVariables
-                    options={campaignOptions}
-                />
-            )}
+            <ComboboxInput
+                name="campaignId"
+                label="Campaign"
+                placeholder="Any campaign"
+                disableVariables
+                options={campaignOptions}
+            />
             <Outcome id="triggered" schema={getOutcomeSchema(eventType)} />
         </>
     )

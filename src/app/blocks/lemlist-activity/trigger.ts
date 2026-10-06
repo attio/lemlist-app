@@ -7,6 +7,21 @@ import {toOutcomeData} from "./to-outcome"
 
 const logger = createLogger("lemlistActivity trigger - trigger")
 
+/**
+ * A lemlist webhook can be scoped to one campaign, but activate never set one, so every
+ * webhook already registered receives events from all campaigns. This check has to stay even if
+ * new webhooks get scoped, because those existing triggers still depend on it.
+ *
+ * @see https://developer.lemlist.com/api-reference/objects-definitions/webhook#schema-campaign-id
+ */
+function isFromOtherCampaign(configuredCampaignId?: string, receivedCampaignId?: string): boolean {
+    if (!configuredCampaignId || !receivedCampaignId) {
+        return false
+    }
+
+    return receivedCampaignId !== configuredCampaignId
+}
+
 export default Workflows.defineWorkflowBlockTrigger(block, async (req, {config, metadata}) => {
     const {uniqueActivationId} = metadata
     let payload: unknown
@@ -36,7 +51,7 @@ export default Workflows.defineWorkflowBlockTrigger(block, async (req, {config, 
         return {type: "no-op"}
     }
 
-    if (config.campaignId && data.campaignId !== config.campaignId) {
+    if (isFromOtherCampaign(config.campaignId, data.campaignId)) {
         logger.log("Ignoring webhook for different campaign", {
             uniqueActivationId,
             receivedCampaignId: data.campaignId,

@@ -73,4 +73,59 @@ describe("toOutcomeData", () => {
         expect(data.campaign_name).toBe("")
         expect(data.lead_email).toBeUndefined()
     })
+
+    describe("unsubscribes", () => {
+        const unsubscribedFromCampaignEmail = {
+            _id: "act_1",
+            type: "entityUnsubscribed",
+            unsubscribedSource: "lead",
+            mutationAction: "unsubscribe",
+            mutationType: "entity",
+            createdAt: CREATED_AT,
+            leadId: "lea_1",
+            campaignId: "cam_1",
+            campaignName: "Campaign one",
+            leadFirstName: "Ada",
+            leadLastName: "Lovelace",
+            leadEmail: "ada@example.com",
+            contactId: "ctc_1",
+            email: "ada@example.com",
+            firstName: "Ada",
+            lastName: "Lovelace",
+            doNotContact: "true",
+            unsubEmail: "true",
+        }
+
+        it("maps the contact and campaign fields", () => {
+            const data = toOutcomeData(
+                LemlistActivityPayloadSchema.parse(unsubscribedFromCampaignEmail)
+            )
+
+            expect(data).toEqual({
+                contact_id: "ctc_1",
+                contact_email: {type: "email-address", value: "ada@example.com"},
+                contact_first_name: "Ada",
+                contact_last_name: "Lovelace",
+                campaign_id: "cam_1",
+                campaign_name: "Campaign one",
+                created_at: new Date(CREATED_AT),
+            })
+        })
+
+        it("leaves the campaign fields unset outside a campaign", () => {
+            const data = toOutcomeData(
+                LemlistActivityPayloadSchema.parse({
+                    ...unsubscribedFromCampaignEmail,
+                    campaignId: undefined,
+                    campaignName: undefined,
+                })
+            )
+
+            expect(data).toMatchObject({
+                contact_id: "ctc_1",
+                campaign_id: undefined,
+                campaign_name: undefined,
+            })
+        })
+    })
 })

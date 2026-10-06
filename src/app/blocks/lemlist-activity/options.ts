@@ -69,8 +69,15 @@ export const ACTIVITY_OPTIONS: Array<PlainComboboxOption> = [
     },
     {
         value: "emailsUnsubscribed",
-        label: "Lead unsubscribed via email",
-        description: "Fires when the lead unsubscribes from a campaign email",
+        label: "Lead stopped because they are on the unsubscribe list",
+        description:
+            "Fires when a campaign stops the lead because their email or domain is on the unsubscribe list",
+    },
+    {
+        value: "entityUnsubscribed",
+        label: "Contact unsubscribed from all communications",
+        description:
+            "Fires when the contact clicks an unsubscribe link or is marked as do-not-contact",
     },
     {
         value: "emailsInterested",
@@ -224,12 +231,6 @@ const DEPRECATED_ACTIVITY_OPTIONS: Array<PlainComboboxOption> = [
 ]
 
 const ALL_ACTIVITY_OPTIONS = [...ACTIVITY_OPTIONS, ...DEPRECATED_ACTIVITY_OPTIONS]
-
-export const EVENT_TYPES_WITH_CAMPAIGN_FILTER = new Set(["contacted", "paused", "resumed"])
-
-export function hasCampaignFilter(eventType?: string): boolean {
-    return EVENT_TYPES_WITH_CAMPAIGN_FILTER.has(eventType ?? "")
-}
 
 export const optionsProvider: PlainComboboxOptionsProvider = {
     getOption: async (value) => {

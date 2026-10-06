@@ -2,6 +2,19 @@ import {Workflows} from "attio/server"
 import type {LemlistActivityPayload} from "../../../lemlist-api/schemas"
 
 export function toOutcomeData(data: LemlistActivityPayload) {
+    if (data.type === "entityUnsubscribed") {
+        return {
+            contact_id: data.contactId ?? "",
+            contact_email:
+                (data.email ? Workflows.OutcomeValue.emailAddress(data.email) : null) ?? undefined,
+            contact_first_name: data.firstName ?? "",
+            contact_last_name: data.lastName ?? "",
+            campaign_id: data.campaignId,
+            campaign_name: data.campaignName,
+            created_at: new Date(data.createdAt),
+        }
+    }
+
     const leadEmail = data.leadEmail ? Workflows.OutcomeValue.emailAddress(data.leadEmail) : null
 
     const baseData = {

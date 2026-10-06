@@ -137,6 +137,7 @@ export const LemlistWebhookEventTypeSchema = z.enum([
     "emailsInterested",
     "emailsNotInterested",
     "emailsUnsubscribed",
+    "entityUnsubscribed",
     "linkedinSent",
     "linkedinOpened",
     "linkedinReplied",
@@ -245,6 +246,10 @@ export const LemlistActivityPayloadSchema = z
         linkUrl: z.string().optional(),
         bounceReason: z.string().optional(),
         linkedinUrl: z.string().optional(),
+        contactId: z.string().optional(),
+        email: z.string().optional(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
     })
     .passthrough()
 
