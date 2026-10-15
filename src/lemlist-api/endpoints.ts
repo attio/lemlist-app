@@ -72,11 +72,6 @@ export const endpoints = {
         team: `${LEMLIST_API_BASE_URL}/team`,
 
         /**
-         * @see https://developer.lemlist.com/api-reference/endpoints/users/get-user
-         */
-        user: (userId: string) => `${LEMLIST_API_BASE_URL}/users/${userId}`,
-
-        /**
          * @see https://developer.lemlist.com/api-reference/endpoints/companies/get-many-companies
          */
         companies: `${LEMLIST_API_BASE_URL}/companies`,

@@ -328,18 +328,18 @@ export type LemlistCompany = z.infer<typeof LemlistCompanySchema>
 
 export const LemlistCompanyListSchema = z.object({data: z.array(LemlistCompanySchema)})
 
-export const LemlistTeamResponseSchema = z.object({
-    userIds: z.array(z.string()),
-})
-
-export const LemlistUserSchema = z.object({
-    _id: z.string(),
+const LemlistUserSchema = z.object({
+    userId: z.string(),
     email: z.string().optional(),
-    firstName: z.string().optional(),
-    lastName: z.string().optional(),
+    name: z.string().optional(),
 })
 
 export type LemlistUser = z.infer<typeof LemlistUserSchema>
+
+/** `GET /team?version=v2` — `users` embeds member details, avoiding one Get User call per member. */
+export const LemlistTeamResponseSchema = z.object({
+    users: z.array(LemlistUserSchema),
+})
 
 export const LemlistCreateTaskRequestSchema = z.object({
     assignedTo: z.string(),

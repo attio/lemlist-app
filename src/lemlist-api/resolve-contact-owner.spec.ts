@@ -10,8 +10,8 @@ vi.mock("./team", () => ({
 }))
 
 const team: LemlistUser[] = [
-    {_id: "usr_alice", email: "alice@example.com", firstName: "Alice"},
-    {_id: "usr_bob", email: "bob@example.com"},
+    {userId: "usr_alice", email: "alice@example.com", name: "Alice"},
+    {userId: "usr_bob", email: "bob@example.com"},
 ]
 
 describe(resolveContactOwner, () => {

@@ -45,15 +45,15 @@ export async function resolveContactOwner({
         members = teamResult.value
     }
 
-    const byId = members.find((member) => member._id === trimmed)
+    const byId = members.find((member) => member.userId === trimmed)
     if (byId) {
-        return complete({userId: byId._id, warning: null})
+        return complete({userId: byId.userId, warning: null})
     }
 
     const normalized = trimmed.toLowerCase()
     const byEmail = members.find((member) => member.email?.toLowerCase() === normalized)
     if (byEmail) {
-        return complete({userId: byEmail._id, warning: null})
+        return complete({userId: byEmail.userId, warning: null})
     }
 
     return complete({

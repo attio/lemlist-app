@@ -22,17 +22,9 @@ export default async function listTeamMembers(): Promise<TeamMemberOption[]> {
         return []
     }
 
-    return result.value.map((member) => {
-        // Lemlist's Get User docs only guarantee email (+ role); first/last name are optional.
-        const label =
-            member.firstName || member.lastName
-                ? [member.firstName, member.lastName].filter(Boolean).join(" ")
-                : (member.email ?? member._id)
-
-        return {
-            value: member._id,
-            label,
-            description: member.email,
-        }
-    })
+    return result.value.map((member) => ({
+        value: member.userId,
+        label: member.name || member.email || member.userId,
+        description: member.email,
+    }))
 }
