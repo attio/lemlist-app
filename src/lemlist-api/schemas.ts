@@ -243,7 +243,12 @@ export const LemlistActivityPayloadSchema = z
         leadFirstName: z.string().optional(),
         leadLastName: z.string().optional(),
         subject: z.string().optional(),
-        linkUrl: z.string().optional(),
+        /**
+         * Sent on `emailsClicked` but missing from lemlist's webhook payload docs. The test click
+         * event that the lemlist app sends from its webhook management section also omits it.
+         */
+        location: z.string().optional(),
+        bot: z.boolean().optional(),
         bounceReason: z.string().optional(),
         linkedinUrl: z.string().optional(),
         contactId: z.string().optional(),

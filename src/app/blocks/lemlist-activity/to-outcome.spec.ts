@@ -43,7 +43,7 @@ describe("toOutcomeData", () => {
 
     it.each([
         ["emailsSent", {subject: "Hello"}],
-        ["emailsClicked", {subject: "Hello", linkUrl: "https://example.com"}],
+        ["emailsClicked", {location: "https://example.com"}],
         ["emailsBounced", {subject: "Hello", bounceReason: "hard"}],
         ["linkedinReplied", {linkedinUrl: "https://linkedin.com/in/ada"}],
         // Not handled by a dedicated branch so it falls through to the base outcome
@@ -72,6 +72,29 @@ describe("toOutcomeData", () => {
 
         expect(data.campaign_name).toBe("")
         expect(data.lead_email).toBeUndefined()
+    })
+
+    it("maps the clicked link from location and the bot flag", () => {
+        const data = toOutcomeData(
+            payload({
+                type: "emailsClicked",
+                subject: undefined,
+                location: "https://example.com",
+                bot: true,
+            })
+        )
+
+        expect(data).toEqual({
+            campaign_id: "cam_1",
+            campaign_name: "Campaign one",
+            lead_id: "lea_1",
+            lead_email: {type: "email-address", value: "lead@example.com"},
+            lead_first_name: "Ada",
+            lead_last_name: "Lovelace",
+            link_url: "https://example.com",
+            bot: true,
+            created_at: new Date(CREATED_AT),
+        })
     })
 
     describe("unsubscribes", () => {

@@ -37,7 +37,7 @@ export function toOutcomeData(data: LemlistActivityPayload) {
             return {...baseData, subject: data.subject ?? ""}
 
         case "emailsClicked":
-            return {...baseData, subject: data.subject ?? "", link_url: data.linkUrl ?? ""}
+            return {...baseData, link_url: data.location ?? "", bot: data.bot}
 
         case "emailsBounced":
             return {

@@ -29,8 +29,8 @@ const emailClickedOutcomeSchema = Workflows.OutcomeSchema.struct({
     lead_first_name: Workflows.OutcomeSchema.string().title("Lead first name"),
     lead_last_name: Workflows.OutcomeSchema.string().title("Lead last name"),
     created_at: Workflows.OutcomeSchema.timestamp().title("Created at"),
-    subject: Workflows.OutcomeSchema.string().title("Subject"),
     link_url: Workflows.OutcomeSchema.string().title("Link URL"),
+    bot: Workflows.OutcomeSchema.boolean().optional().title("Bot click"),
 })
 
 const emailBouncedOutcomeSchema = Workflows.OutcomeSchema.struct({
