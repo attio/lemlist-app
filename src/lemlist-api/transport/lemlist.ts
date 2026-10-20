@@ -72,10 +72,8 @@ async function request<T>(
 
         if (response.status === 429 && attempt < MAX_RETRIES) {
             // Retry-After is seconds; fall back to the rate limit window duration
-            const retryAfterHeader = response.headers.get("Retry-After")
-            const delay = retryAfterHeader
-                ? parseInt(retryAfterHeader, 10) * 1000
-                : RATE_LIMIT_WINDOW_MS
+            const retryAfterSeconds = Number.parseInt(response.headers.get("Retry-After") ?? "", 10)
+            const delay = retryAfterSeconds >= 0 ? retryAfterSeconds * 1000 : RATE_LIMIT_WINDOW_MS
             await new Promise((resolve) => setTimeout(resolve, delay))
             return request<T>(method, path, options, attempt + 1)
         }

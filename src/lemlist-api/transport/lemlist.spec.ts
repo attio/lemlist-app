@@ -68,3 +68,26 @@ describe("lemlist API request logging", () => {
         expect(mocks.logger.log).not.toHaveBeenCalledWith(expect.stringContaining("person"))
     })
 })
+
+describe("lemlist API rate limiting", () => {
+    it("waits the fallback window when Retry-After is not a number of seconds", async () => {
+        vi.useFakeTimers({now: new Date("2026-10-21T07:00:00Z")})
+        mocks.fetch
+            .mockResolvedValueOnce(
+                new Response(null, {
+                    status: 429,
+                    headers: {"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"},
+                })
+            )
+            .mockResolvedValueOnce(Response.json({}))
+
+        const resultPromise = lemlistApi.get("/team")
+
+        await vi.advanceTimersByTimeAsync(1999)
+        expect(mocks.fetch).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(1)
+        await resultPromise
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+        vi.useRealTimers()
+    })
+})
