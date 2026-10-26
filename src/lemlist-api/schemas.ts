@@ -138,6 +138,9 @@ export const LemlistWebhookEventTypeSchema = z.enum([
     "emailsInterested",
     "emailsNotInterested",
     "emailsUnsubscribed",
+    // Never subscribed to directly; lemlist delivers them to `emailsUnsubscribed` webhooks.
+    "apiUnsubscribed",
+    "manualUnsubscribed",
     "entityUnsubscribed",
     "linkedinSent",
     "linkedinOpened",

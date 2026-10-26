@@ -3,7 +3,7 @@ import {LemlistActivityPayloadSchema} from "../../../lemlist-api/schemas"
 import {createLogger} from "../../../common/logger"
 import {InvalidSchemaError} from "../../../lemlist-api/transport/schema-error"
 import block from "./block"
-import {toOutcomeData} from "./to-outcome"
+import {matchEventType, toOutcomeData} from "./to-outcome"
 
 const logger = createLogger("lemlistActivity trigger - trigger")
 
@@ -42,7 +42,9 @@ export default Workflows.defineWorkflowBlockTrigger(block, async (req, {config, 
 
     const data = parsed.data
 
-    if (data.type !== config.eventType) {
+    const eventType = matchEventType(config.eventType, data.type)
+
+    if (!eventType) {
         logger.log("Ignoring webhook for different event type", {
             uniqueActivationId,
             receivedType: data.type,
@@ -65,6 +67,6 @@ export default Workflows.defineWorkflowBlockTrigger(block, async (req, {config, 
     return {
         type: "outcome",
         id: "triggered",
-        data: toOutcomeData(data),
+        data: toOutcomeData(data, eventType),
     }
 })

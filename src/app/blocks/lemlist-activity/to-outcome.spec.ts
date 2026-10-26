@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest"
 import {LemlistActivityPayloadSchema} from "../../../lemlist-api/schemas"
-import {toOutcomeData} from "./to-outcome"
+import {matchEventType, toOutcomeData} from "./to-outcome"
 
 const CREATED_AT = "2026-08-10T00:47:42.035Z"
 
@@ -38,7 +38,7 @@ describe("LemlistActivityPayloadSchema createdAt", () => {
 
 describe("toOutcomeData", () => {
     it("exposes created_at as a timestamp", () => {
-        expect(toOutcomeData(payload()).created_at).toEqual(new Date(CREATED_AT))
+        expect(toOutcomeData(payload(), "emailsReplied").created_at).toEqual(new Date(CREATED_AT))
     })
 
     it.each([
@@ -49,13 +49,13 @@ describe("toOutcomeData", () => {
         // Not handled by a dedicated branch so it falls through to the base outcome
         ["smsReplied", {}],
     ])("exposes created_at for %s activities", (type, extra) => {
-        const data = toOutcomeData(payload({type, ...extra}))
+        const data = toOutcomeData(payload({type, ...extra}), type)
 
         expect(data.created_at).toEqual(new Date(CREATED_AT))
     })
 
     it("maps the lead and campaign fields alongside the timestamp", () => {
-        expect(toOutcomeData(payload())).toEqual({
+        expect(toOutcomeData(payload(), "emailsReplied")).toEqual({
             campaign_id: "cam_1",
             campaign_name: "Campaign one",
             lead_id: "lea_1",
@@ -68,7 +68,10 @@ describe("toOutcomeData", () => {
     })
 
     it("falls back to empty strings for missing optional fields", () => {
-        const data = toOutcomeData(payload({campaignName: undefined, leadEmail: undefined}))
+        const data = toOutcomeData(
+            payload({campaignName: undefined, leadEmail: undefined}),
+            "emailsReplied"
+        )
 
         expect(data.campaign_name).toBe("")
         expect(data.lead_email).toBeUndefined()
@@ -81,7 +84,8 @@ describe("toOutcomeData", () => {
                 subject: undefined,
                 location: "https://example.com",
                 bot: true,
-            })
+            }),
+            "emailsClicked"
         )
 
         expect(data).toEqual({
@@ -121,7 +125,8 @@ describe("toOutcomeData", () => {
 
         it("maps the contact and campaign fields", () => {
             const data = toOutcomeData(
-                LemlistActivityPayloadSchema.parse(unsubscribedFromCampaignEmail)
+                LemlistActivityPayloadSchema.parse(unsubscribedFromCampaignEmail),
+                "entityUnsubscribed"
             )
 
             expect(data).toEqual({
@@ -141,7 +146,8 @@ describe("toOutcomeData", () => {
                     ...unsubscribedFromCampaignEmail,
                     campaignId: undefined,
                     campaignName: undefined,
-                })
+                }),
+                "entityUnsubscribed"
             )
 
             expect(data).toMatchObject({
@@ -150,5 +156,33 @@ describe("toOutcomeData", () => {
                 campaign_name: undefined,
             })
         })
+    })
+})
+
+describe("matchEventType", () => {
+    it("matches a lead-state type against the activity lemlist delivers for it", () => {
+        expect(matchEventType("notInterested", "manualNotInterested")).toBe("notInterested")
+    })
+
+    it.each(["apiUnsubscribed", "manualUnsubscribed"] as const)(
+        "matches %s to an emailsUnsubscribed trigger",
+        (received) => {
+            expect(matchEventType("emailsUnsubscribed", received)).toBe("emailsUnsubscribed")
+        }
+    )
+
+    it("parses an unsubscribe activity delivered to an emailsUnsubscribed webhook", () => {
+        expect(payload({type: "apiUnsubscribed"}).type).toBe("apiUnsubscribed")
+    })
+
+    it("matches a specific type only against itself", () => {
+        expect(matchEventType("emailsReplied", "emailsReplied")).toBe("emailsReplied")
+        expect(matchEventType("manualNotInterested", "emailsNotInterested")).toBeUndefined()
+    })
+
+    it("shapes a lead-state outcome without the activity's extra fields", () => {
+        const data = toOutcomeData(payload({type: "emailsNotInterested"}), "notInterested")
+
+        expect(data).not.toHaveProperty("subject")
     })
 })
