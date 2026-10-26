@@ -1,4 +1,5 @@
-import type {ZodError} from "zod"
+import {complete, errored, type Result} from "@attio/fetchable"
+import type {output, ZodError, ZodTypeAny} from "zod"
 import {createLogger} from "../../common/logger"
 import {InvalidSchemaError} from "./schema-error"
 
@@ -18,6 +19,10 @@ export type LemlistErrorCode =
     | "UNEXPECTED_ERROR"
     /** Not a lemlist status: ask Attio to retry the block. */
     | "RETRY"
+    /** `400 LEAD_ALREADY_IN_CAMPAIGN`, from the create lead call. */
+    | "ALREADY_IN_CAMPAIGN"
+    /** `409 LEAD_ALREADY_IN_OTHER_CAMPAIGN`, only sent with `deduplicate`. */
+    | "ALREADY_IN_OTHER_CAMPAIGN"
 
 export type LemlistApiError = {
     code: LemlistErrorCode
@@ -26,7 +31,15 @@ export type LemlistApiError = {
 
 const logger = createLogger("lemlist API error")
 
-export function codeForStatus(status: number): LemlistErrorCode {
+/** lemlist names these refusals only in the response text, so `detail` outranks the status. */
+export function codeForStatus(status: number, detail: string | null = null): LemlistErrorCode {
+    if (detail?.includes("LEAD_ALREADY_IN_OTHER_CAMPAIGN")) {
+        return "ALREADY_IN_OTHER_CAMPAIGN"
+    }
+    if (detail?.includes("LEAD_ALREADY_IN_CAMPAIGN")) {
+        return "ALREADY_IN_CAMPAIGN"
+    }
+
     switch (status) {
         case 400:
             return "INVALID_REQUEST"
@@ -66,6 +79,8 @@ export function isRetryable(error: LemlistApiError): boolean {
         case "CONFLICT":
         case "UNEXPECTED_RESPONSE":
         case "UNEXPECTED_ERROR":
+        case "ALREADY_IN_CAMPAIGN":
+        case "ALREADY_IN_OTHER_CAMPAIGN":
             return false
     }
 }
@@ -92,6 +107,10 @@ export function lemlistErrorMessage(error: LemlistApiError): string {
             return "lemlist could not be reached. Try again shortly."
         case "RETRY":
             return "Try again shortly."
+        case "ALREADY_IN_CAMPAIGN":
+            return "This person is already in this lemlist campaign."
+        case "ALREADY_IN_OTHER_CAMPAIGN":
+            return "This person is already in another lemlist campaign, and deduplication is on."
         case "UNEXPECTED_RESPONSE":
         case "UNEXPECTED_ERROR":
             return "An unexpected error occurred when calling lemlist's API."
@@ -106,6 +125,15 @@ export function schemaParseError(detail: string | ZodError): LemlistApiError {
     )
 
     return {code: "UNEXPECTED_RESPONSE", detail: null}
+}
+
+/** Validates a lemlist response body, logging the failing field paths when it does not match. */
+export function parseResponse<TSchema extends ZodTypeAny>(
+    schema: TSchema,
+    data: unknown
+): Result<output<TSchema>, LemlistApiError> {
+    const parsed = schema.safeParse(data)
+    return parsed.success ? complete(parsed.data) : errored(schemaParseError(parsed.error))
 }
 
 async function readErrorBody(response: Response): Promise<unknown> {

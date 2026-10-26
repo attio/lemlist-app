@@ -96,6 +96,23 @@ describe("addPeopleToCampaign", () => {
         ])
     })
 
+    it("skips people lemlist already has in the campaign", async () => {
+        mockLoadPeople.mockResolvedValue(
+            complete(new Map([["dup", complete(person("dup@example.com"))]]))
+        )
+        mockCreateLead.mockResolvedValue(
+            errored({code: "ALREADY_IN_CAMPAIGN", detail: "LEAD_ALREADY_IN_CAMPAIGN"})
+        )
+
+        const outcomes = await addPeopleToCampaign({
+            recordIds: ["dup"],
+            campaignId: "cam_1",
+            contactOwner: "usr_alice",
+        })
+
+        expect(outcomes).toEqual([{recordId: "dup", status: "skipped_already_in_campaign"}])
+    })
+
     it("reports every record as an error when the whole batch fails to load", async () => {
         mockLoadPeople.mockResolvedValue(errored({code: "UNEXPECTED_ERROR"}))
 

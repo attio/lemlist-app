@@ -5,7 +5,6 @@ export const ErrorCode = {
     EnrichEmailInputRequired: "enrich_email_input_required",
     EnrichLinkedinInputRequired: "enrich_linkedin_input_required",
     EnrichVerifyEmailInputRequired: "enrich_verify_email_input_required",
-    EnrichmentResponseInvalid: "enrichment_response_invalid",
     CreateTaskInvalidRequest: "create_task_invalid_request",
 } as const
 
@@ -21,7 +20,6 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
     [ErrorCode.EnrichLinkedinInputRequired]:
         "At least one of email, first name, last name, or company name is required",
     [ErrorCode.EnrichVerifyEmailInputRequired]: "An email address is required to verify",
-    [ErrorCode.EnrichmentResponseInvalid]: "Unexpected enrichment response from lemlist",
     [ErrorCode.CreateTaskInvalidRequest]:
         "Assigned To, Type, and Due date are required to create a task",
 }

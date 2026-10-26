@@ -16,19 +16,12 @@ import BulkAddToCampaignDialog, {
 
 const BATCH_SIZE = 50
 
-// Prettify known error messages
-function formatErrorMessage(message: string, count: number) {
-    if (message.toLowerCase().includes("lead already in the campaign")) {
-        return `Skipped ${count} ${pluralize(count, "lead", "leads")} that ${pluralize(count, "is", "are")} already in the campaign.`
-    }
-    return `${count} failed: ${message}`
-}
-
 type BatchOutcome = {
     successes: number
     errorsByMessage: Record<string, number>
     noEmailCount: number
     notFoundCount: number
+    alreadyInCampaignCount: number
 }
 
 async function processBatch({
@@ -51,6 +44,7 @@ async function processBatch({
     let successes = 0
     let noEmailCount = 0
     let notFoundCount = 0
+    let alreadyInCampaignCount = 0
     const errorsByMessage: Record<string, number> = {}
 
     for (const outcome of bulkAddOutcome) {
@@ -64,6 +58,9 @@ async function processBatch({
             case "skipped_not_found":
                 notFoundCount++
                 break
+            case "skipped_already_in_campaign":
+                alreadyInCampaignCount++
+                break
             case "error":
                 errorsByMessage[outcome.errorMessage] =
                     (errorsByMessage[outcome.errorMessage] ?? 0) + 1
@@ -71,7 +68,7 @@ async function processBatch({
         }
     }
 
-    return {successes, errorsByMessage, noEmailCount, notFoundCount}
+    return {successes, errorsByMessage, noEmailCount, notFoundCount, alreadyInCampaignCount}
 }
 
 async function showSummaryToast({
@@ -96,29 +93,33 @@ async function showSummaryToast({
     }
 
     // Aggregate counts from each batch
-    const {successes, skippedNoEmail, skippedNotFound, errorsByMessage} = outcome.results.reduce(
-        (acc, outcome) => {
-            acc.successes += outcome.successes
-            acc.skippedNoEmail += outcome.noEmailCount
-            acc.skippedNotFound += outcome.notFoundCount
-            for (const [message, count] of Object.entries(outcome.errorsByMessage)) {
-                acc.errorsByMessage[message] = (acc.errorsByMessage[message] ?? 0) + count
+    const {successes, skippedNoEmail, skippedNotFound, skippedAlreadyInCampaign, errorsByMessage} =
+        outcome.results.reduce(
+            (acc, outcome) => {
+                acc.successes += outcome.successes
+                acc.skippedNoEmail += outcome.noEmailCount
+                acc.skippedNotFound += outcome.notFoundCount
+                acc.skippedAlreadyInCampaign += outcome.alreadyInCampaignCount
+                for (const [message, count] of Object.entries(outcome.errorsByMessage)) {
+                    acc.errorsByMessage[message] = (acc.errorsByMessage[message] ?? 0) + count
+                }
+                return acc
+            },
+            {
+                successes: 0,
+                skippedNoEmail: 0,
+                skippedNotFound: 0,
+                skippedAlreadyInCampaign: 0,
+                errorsByMessage: {} as Record<string, number>,
             }
-            return acc
-        },
-        {
-            successes: 0,
-            skippedNoEmail: 0,
-            skippedNotFound: 0,
-            errorsByMessage: {} as Record<string, number>,
-        }
-    )
+        )
 
     // Summary message to show on the toast (summarise messages errors if any)
     const summary = [
-        ...Object.entries(errorsByMessage).map(([message, count]) =>
-            formatErrorMessage(message, count)
-        ),
+        ...Object.entries(errorsByMessage).map(([message, count]) => `${count} failed: ${message}`),
+        skippedAlreadyInCampaign > 0
+            ? `Skipped ${skippedAlreadyInCampaign} ${pluralize(skippedAlreadyInCampaign, "person", "people")} already in the campaign.`
+            : null,
         skippedNoEmail > 0
             ? `${skippedNoEmail} skipped ${pluralize(skippedNoEmail, "person", "people")} that ${pluralize(skippedNoEmail, "has", "have")} no email address.`
             : null,
@@ -137,7 +138,12 @@ async function showSummaryToast({
         title = `No people were added to ${campaignName ?? "the campaign"}`
     } else {
         title = `Added ${successes} ${pluralize(successes, "person", "people")} to ${campaignName ?? "the campaign"}`
-        if (Object.keys(errorsByMessage).length > 0 || skippedNoEmail > 0 || skippedNotFound > 0) {
+        if (
+            Object.keys(errorsByMessage).length > 0 ||
+            skippedNoEmail > 0 ||
+            skippedNotFound > 0 ||
+            skippedAlreadyInCampaign > 0
+        ) {
             variant = "warning"
         }
     }

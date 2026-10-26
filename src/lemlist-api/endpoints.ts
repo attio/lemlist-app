@@ -46,11 +46,6 @@ export const endpoints = {
             `${LEMLIST_API_BASE_URL}/campaigns/${campaignId}/leads/`,
 
         /**
-         * @see https://developer.lemlist.com/api-reference/endpoints/enrich/enrich-lead
-         */
-        enrichLead: (leadId: string) => `${LEMLIST_API_BASE_URL}/leads/${leadId}/enrich`,
-
-        /**
          * @see https://developer.lemlist.com/api-reference/endpoints/enrich/enrich-data
          */
         enrich: `${LEMLIST_API_BASE_URL}/enrich`,

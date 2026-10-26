@@ -1,8 +1,8 @@
-import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
+import {type AsyncResult, bind, errored, map} from "@attio/fetchable"
 import {ErrorCode, errorMessage} from "../error-codes"
 import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
+import {parseResponse, schemaParseError} from "./transport/error"
 import type {EnrichmentGetResult} from "./schemas"
 import {LemlistEnrichGetResponseSchema, LemlistEnrichPostResponseSchema} from "./schemas"
 import type {QueryParams} from "./transport/url"
@@ -102,17 +102,9 @@ export async function enrichContact(
         buildEnrichQueryParams(input, options)
     )
 
-    if (isErrored(responseResult)) {
-        return responseResult
-    }
-
-    const parsed = LemlistEnrichPostResponseSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(errorMessage(ErrorCode.EnrichmentResponseInvalid)))
-    }
-
-    return complete(parsed.data.id)
+    return bind(responseResult, (response) =>
+        map(parseResponse(LemlistEnrichPostResponseSchema, response.data), (enrich) => enrich.id)
+    )
 }
 
 /**
@@ -126,21 +118,10 @@ export async function getEnrichmentResult(
 ): AsyncResult<EnrichmentGetResult, LemlistApiError> {
     const responseResult = await lemlistApi.get(endpoints.api.enrichResult(enrichId))
 
-    if (isErrored(responseResult)) {
-        return responseResult
-    }
-
-    const {statusCode, data} = responseResult.value
-
-    const parsed = LemlistEnrichGetResponseSchema.safeParse(data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(errorMessage(ErrorCode.EnrichmentResponseInvalid)))
-    }
-
-    if (statusCode === 202) {
-        return complete({status: "in_progress", data: parsed.data})
-    }
-
-    return complete({status: "completed", data: parsed.data})
+    return bind(responseResult, ({statusCode, data}) =>
+        map(parseResponse(LemlistEnrichGetResponseSchema, data), (result) => ({
+            status: statusCode === 202 ? "in_progress" : "completed",
+            data: result,
+        }))
+    )
 }

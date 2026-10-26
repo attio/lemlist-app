@@ -109,7 +109,8 @@ export const LemlistCreateLeadResponseSchema = z.object({
     _id: z.string(),
     campaignId: z.string(),
     campaignName: z.string().optional(),
-    email: z.string().email(),
+    // lemlist does not document `email` as always present, and we only echo it back.
+    email: z.string().optional(),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     contactId: z.string().optional(),

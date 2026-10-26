@@ -2,7 +2,7 @@ import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
 import {createLogger} from "../common/logger"
 import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
+import {parseResponse, schemaParseError} from "./transport/error"
 import {
     type LemlistContact,
     LemlistContactSchema,
@@ -86,13 +86,7 @@ export async function getContact(
         return responseResult
     }
 
-    const parsed = LemlistContactSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data)
+    return parseResponse(LemlistContactSchema, responseResult.value.data)
 }
 
 /**
@@ -109,17 +103,17 @@ export async function upsertContact(
         return responseResult
     }
 
-    const parsed = LemlistUpsertContactResponseSchema.safeParse(responseResult.value.data)
+    const parsed = parseResponse(LemlistUpsertContactResponseSchema, responseResult.value.data)
 
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
+    if (isErrored(parsed)) {
+        return parsed
     }
 
-    if (!parsed.data.success) {
+    if (!parsed.value.success) {
         return errored(schemaParseError("success_false"))
     }
 
-    const id = parsed.data.data?._id
+    const id = parsed.value.data?._id
     if (!id) {
         const fallbackId = typeof body.email === "string" ? body.email : ""
         logger.error(

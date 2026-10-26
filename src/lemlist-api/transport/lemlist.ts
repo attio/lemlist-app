@@ -74,15 +74,16 @@ async function request<T>(
             // Retry-After is seconds; fall back to the rate limit window duration
             const retryAfterSeconds = Number.parseInt(response.headers.get("Retry-After") ?? "", 10)
             const delay = retryAfterSeconds >= 0 ? retryAfterSeconds * 1000 : RATE_LIMIT_WINDOW_MS
+            logger.error(
+                `${requestLabel} rate limited, retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms`
+            )
             await new Promise((resolve) => setTimeout(resolve, delay))
             return request<T>(method, path, options, attempt + 1)
         }
 
         if (!response.ok) {
-            return errored({
-                code: codeForStatus(response.status),
-                detail: await readErrorDetail(response, requestLabel),
-            })
+            const detail = await readErrorDetail(response, requestLabel)
+            return errored({code: codeForStatus(response.status, detail), detail})
         }
 
         if (response.status === 204) {

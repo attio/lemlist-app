@@ -28,14 +28,3 @@ export function toEnabledQueryParams<T extends Record<string, boolean>>(params: 
         Object.entries(params).filter((entry): entry is [string, true] => entry[1] === true)
     ) as Partial<T>
 }
-
-export function withContactId(
-    body: Record<string, unknown>,
-    contactId: string
-): Record<string, unknown> {
-    if (contactId.startsWith("ctc_")) {
-        return {...body, contactId}
-    }
-
-    return body
-}

@@ -12,6 +12,7 @@ export type BulkAddOutcome =
     | {recordId: string; status: "error"; errorMessage: string}
     | {recordId: string; status: "skipped_no_email"}
     | {recordId: string; status: "skipped_not_found"}
+    | {recordId: string; status: "skipped_already_in_campaign"}
 
 function assertNever(_value: never): void {}
 
@@ -24,8 +25,9 @@ function assertNever(_value: never): void {}
  * `contactOwner` must already be a validated Lemlist user ID, or `null` when unset
  * (see {@link resolveContactOwnerServer}) — Lemlist silently ignores invalid owners.
  *
- * Each record is reported individually: records that no longer exist in Attio are `skipped_not_found`
- * and records without an email address are `skipped_no_email`, so the caller can summarise them
+ * Each record is reported individually: records that no longer exist in Attio are `skipped_not_found`,
+ * records without an email address are `skipped_no_email`, and people lemlist already has in the
+ * campaign are `skipped_already_in_campaign`, so the caller can summarise them
  * separately from genuine errors. If the batch can't be loaded at all, every record is reported as an
  * error so the counts still add up.
  */
@@ -52,6 +54,8 @@ export default async function addPeopleToCampaign({
     const peopleByRecordId = loadResult.value
     const addLeadQueryParams = await getAddLeadQueryParams()
     const outcomes: BulkAddOutcome[] = []
+    const startedAt = Date.now()
+    const errorCodes: Record<string, number> = {}
 
     for (const recordId of recordIds) {
         const personResult = peopleByRecordId.get(recordId)
@@ -78,12 +82,18 @@ export default async function addPeopleToCampaign({
             addLeadQueryParams,
         })
 
+        if (isErrored(result) && result.error.code === "ALREADY_IN_CAMPAIGN") {
+            outcomes.push({recordId, status: "skipped_already_in_campaign"})
+            continue
+        }
+
         if (isErrored(result)) {
             logger.error("Failed to add person to campaign", {
                 recordId,
                 campaignId,
                 error: result.error,
             })
+            errorCodes[result.error.code] = (errorCodes[result.error.code] ?? 0) + 1
             outcomes.push({
                 recordId,
                 status: "error",
@@ -94,6 +104,13 @@ export default async function addPeopleToCampaign({
 
         outcomes.push({recordId, status: "success"})
     }
+
+    logger.log("Batch finished", {
+        campaignId,
+        records: recordIds.length,
+        elapsedMs: Date.now() - startedAt,
+        errorCodes,
+    })
 
     return outcomes
 }

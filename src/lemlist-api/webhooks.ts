@@ -3,7 +3,7 @@ import {createLogger} from "../common/logger"
 import type {Connection} from "attio/server"
 import {lemlistApi, type LemlistApiError, lemlistApiWithConnection} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
+import {parseResponse, schemaParseError} from "./transport/error"
 import {
     type CreateLemlistWebhookRequest,
     CreateLemlistWebhookRequestSchema,
@@ -47,13 +47,7 @@ export async function createWebhook(
         return responseResult
     }
 
-    const parsed = LemlistWebhookSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data)
+    return parseResponse(LemlistWebhookSchema, responseResult.value.data)
 }
 
 /**
@@ -90,11 +84,5 @@ export async function listWebhooks(
         return responseResult
     }
 
-    const parsed = LemlistWebhookListSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data)
+    return parseResponse(LemlistWebhookListSchema, responseResult.value.data)
 }

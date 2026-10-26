@@ -1,17 +1,12 @@
-import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
+import {type AsyncResult, bind, complete, isErrored} from "@attio/fetchable"
 import {getWorkspaceSettings} from "attio/server"
 import {createLogger} from "../common/logger"
 import {buildContactBody, buildLeadBody, type LemlistPerson} from "./person-for-campaign"
 import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {upsertContact} from "./contacts"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
-import {
-    type AddLeadQueryParams,
-    getEffectiveEnrichmentParams,
-    toEnabledQueryParams,
-    withContactId,
-} from "./format"
+import {parseResponse} from "./transport/error"
+import {type AddLeadQueryParams, getEffectiveEnrichmentParams, toEnabledQueryParams} from "./format"
 import {
     type LemlistCampaign,
     LemlistCampaignListSchema,
@@ -59,20 +54,19 @@ export async function listCampaigns(): AsyncResult<LemlistCampaign[], LemlistApi
             offset,
         })
 
-        if (isErrored(responseResult)) {
-            return responseResult
+        const pageResult = bind(responseResult, (response) =>
+            parseResponse(LemlistCampaignListSchema, response.data)
+        )
+
+        if (isErrored(pageResult)) {
+            return pageResult
         }
 
-        const parsed = LemlistCampaignListSchema.safeParse(responseResult.value.data)
-
-        if (!parsed.success) {
-            return errored(schemaParseError(parsed.error))
-        }
-
-        campaigns.push(...parsed.data)
+        const page = pageResult.value
+        campaigns.push(...page)
         requestCount++
 
-        const isLastPage = parsed.data.length < CAMPAIGNS_PAGE_LIMIT
+        const isLastPage = page.length < CAMPAIGNS_PAGE_LIMIT
         if (isLastPage) {
             break
         }
@@ -134,6 +128,17 @@ export function mergeAddLeadQueryParams(
 }
 
 /**
+ * Fields only POST /contacts accepts. Create lead creates or matches the contact itself, so the
+ * extra upsert call is only worth it when the person has one of these.
+ */
+function needsContactUpsert(person: LemlistPerson): boolean {
+    return Boolean(person.summary || person.location || person.additionalEmails.length)
+}
+
+/**
+ * One request in the common case: create lead creates or matches the contact and runs the
+ * enrichments from its query params.
+ *
  * @see https://developer.lemlist.com/api-reference/endpoints/leads/create-lead-in-campaign
  */
 export async function createLeadInCampaign({
@@ -142,50 +147,36 @@ export async function createLeadInCampaign({
     contactOwner,
     addLeadQueryParams,
 }: CreateLeadOptions): AsyncResult<LemlistCreateLeadResponse, LemlistApiError> {
-    const contactBody = buildContactBody({person, contactOwner})
-    const leadBody = buildLeadBody({person, contactOwner})
+    if (needsContactUpsert(person)) {
+        const contactResult = await upsertContact(buildContactBody({person, contactOwner}))
 
-    const contactResult = await upsertContact(contactBody)
-
-    if (isErrored(contactResult)) {
-        return contactResult
+        if (isErrored(contactResult)) {
+            logger.error("Create lead failed at upsert contact", {
+                campaignId,
+                error: contactResult.error,
+            })
+            return contactResult
+        }
     }
 
-    const enrichmentParams = toEnabledQueryParams(
-        getEffectiveEnrichmentParams(addLeadQueryParams, leadBody)
-    )
-    const body = withContactId(leadBody, contactResult.value)
+    const body = buildLeadBody({person, contactOwner})
 
     const postResult = await lemlistApi.post(
         endpoints.api.campaignLeads(campaignId),
         body,
-        toEnabledQueryParams({deduplicate: addLeadQueryParams.deduplicate})
+        toEnabledQueryParams({
+            ...getEffectiveEnrichmentParams(addLeadQueryParams, body),
+            deduplicate: addLeadQueryParams.deduplicate,
+        })
     )
 
-    if (isErrored(postResult)) {
-        return postResult
+    const result = bind(postResult, (response) =>
+        parseResponse(LemlistCreateLeadResponseSchema, response.data)
+    )
+
+    if (isErrored(result)) {
+        logger.error("Create lead failed", {campaignId, error: result.error})
     }
 
-    const parsed = LemlistCreateLeadResponseSchema.safeParse(postResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    if (Object.keys(enrichmentParams).length > 0) {
-        const enrichResult = await lemlistApi.post(
-            endpoints.api.enrichLead(parsed.data._id),
-            undefined,
-            enrichmentParams
-        )
-
-        if (isErrored(enrichResult)) {
-            logger.error("Lead was added but enrichment failed", {
-                leadId: parsed.data._id,
-                error: enrichResult.error,
-            })
-        }
-    }
-
-    return complete(parsed.data)
+    return result
 }

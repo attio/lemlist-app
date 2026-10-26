@@ -1,8 +1,8 @@
-import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
+import {type AsyncResult, complete, isErrored} from "@attio/fetchable"
 import {createLogger} from "../common/logger"
 import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
+import {parseResponse} from "./transport/error"
 import {
     type LemlistLeadByEmail,
     LemlistLeadByEmailSchema,
@@ -33,13 +33,7 @@ export async function getLeadByEmail(
         return responseResult
     }
 
-    const parsed = LemlistLeadByEmailSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data)
+    return parseResponse(LemlistLeadByEmailSchema, responseResult.value.data)
 }
 
 /**
@@ -62,11 +56,5 @@ export async function pauseLead(
         return responseResult
     }
 
-    const parsed = LemlistPauseLeadResponseSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data)
+    return parseResponse(LemlistPauseLeadResponseSchema, responseResult.value.data)
 }

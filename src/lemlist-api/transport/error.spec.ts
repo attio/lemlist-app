@@ -63,6 +63,14 @@ describe(codeForStatus, () => {
         expect(codeForStatus(429)).toBe("RATE_LIMITED")
         expect(codeForStatus(503)).toBe("LEMLIST_SERVER_ERROR")
     })
+
+    it.each([
+        [400, "LEAD_ALREADY_IN_CAMPAIGN", "ALREADY_IN_CAMPAIGN"],
+        [409, "LEAD_ALREADY_IN_OTHER_CAMPAIGN", "ALREADY_IN_OTHER_CAMPAIGN"],
+        [400, "Invalid email", "INVALID_REQUEST"],
+    ] as const)("maps %i %s to %s", (status, detail, expected) => {
+        expect(codeForStatus(status, detail)).toBe(expected)
+    })
 })
 
 describe(isRetryable, () => {

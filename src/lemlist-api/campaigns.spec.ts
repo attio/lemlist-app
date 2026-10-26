@@ -239,7 +239,7 @@ describe("listCampaigns", () => {
 })
 
 describe("createLeadInCampaign", () => {
-    it("creates a lead without calling enrich when enrichment is disabled", async () => {
+    it("creates the lead in one request when the person has no contact-only fields", async () => {
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
@@ -251,22 +251,35 @@ describe("createLeadInCampaign", () => {
         if (!isErrored(result)) {
             expect(result.value).toEqual(sampleLeadResponse)
         }
-        expect(mockUpsertContact).toHaveBeenCalledOnce()
+        expect(mockUpsertContact).not.toHaveBeenCalled()
         expect(mockLemlistPost).toHaveBeenCalledOnce()
         expect(mockLemlistPost).toHaveBeenCalledWith(
             endpoints.api.campaignLeads("cam_456"),
-            expect.objectContaining({
-                email: "jane@example.com",
-                contactId: "ctc_contact_1",
-            }),
+            expect.not.objectContaining({contactId: expect.anything()}),
             {}
         )
+    })
+
+    it.each([
+        ["summary", {summary: "Founder"}],
+        ["location", {location: "Paris"}],
+        ["additionalEmails", {additionalEmails: ["jane@work.example.com"]}],
+    ])("upserts the contact first when the person has %s", async (_field, extra) => {
+        await createLeadInCampaign({
+            campaignId: "cam_456",
+            person: {...samplePerson, ...extra},
+            contactOwner: null,
+            addLeadQueryParams: defaultAddLeadParams,
+        })
+
+        expect(mockUpsertContact).toHaveBeenCalledWith(expect.objectContaining(extra))
+        expect(mockLemlistPost).toHaveBeenCalledOnce()
     })
 
     it("sends a resolved Lemlist user ID as contactOwner on create and upsert", async () => {
         await createLeadInCampaign({
             campaignId: "cam_456",
-            person: samplePerson,
+            person: {...samplePerson, summary: "Founder"},
             contactOwner: "usr_alice",
             addLeadQueryParams: defaultAddLeadParams,
         })
@@ -281,42 +294,39 @@ describe("createLeadInCampaign", () => {
         )
     })
 
-    it("calls enrich after creating a lead when enrichment params are enabled", async () => {
-        const result = await createLeadInCampaign({
-            campaignId: "cam_456",
-            person: samplePerson,
-            contactOwner: null,
-            addLeadQueryParams: {
-                ...defaultAddLeadParams,
-                verifyEmail: true,
-            },
-        })
-
-        expect(isErrored(result)).toBe(false)
-        expect(mockLemlistPost).toHaveBeenCalledTimes(2)
-        expect(mockLemlistPost).toHaveBeenNthCalledWith(
-            2,
-            endpoints.api.enrichLead("lead_123"),
-            undefined,
-            {verifyEmail: true}
-        )
-    })
-
-    it("passes deduplicate on the campaign leads request", async () => {
+    it("passes enrichment and deduplicate as query params on the create request", async () => {
         await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
             contactOwner: null,
             addLeadQueryParams: {
                 ...defaultAddLeadParams,
+                verifyEmail: true,
+                findPhone: true,
                 deduplicate: true,
             },
+        })
+
+        expect(mockLemlistPost).toHaveBeenCalledOnce()
+        expect(mockLemlistPost).toHaveBeenCalledWith(
+            endpoints.api.campaignLeads("cam_456"),
+            expect.any(Object),
+            {verifyEmail: true, findPhone: true, deduplicate: true}
+        )
+    })
+
+    it("skips enrichments for fields the person already has", async () => {
+        await createLeadInCampaign({
+            campaignId: "cam_456",
+            person: samplePerson,
+            contactOwner: null,
+            addLeadQueryParams: {...defaultAddLeadParams, findEmail: true},
         })
 
         expect(mockLemlistPost).toHaveBeenCalledWith(
             endpoints.api.campaignLeads("cam_456"),
             expect.any(Object),
-            {deduplicate: true}
+            {}
         )
     })
 
@@ -326,7 +336,7 @@ describe("createLeadInCampaign", () => {
 
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
-            person: samplePerson,
+            person: {...samplePerson, location: "Paris"},
             contactOwner: null,
             addLeadQueryParams: defaultAddLeadParams,
         })
@@ -349,27 +359,16 @@ describe("createLeadInCampaign", () => {
         expect(result).toEqual(errored(leadError))
     })
 
-    it("still completes when enrichment fails after the lead is created", async () => {
-        mockLemlistPost
-            .mockResolvedValueOnce(apiSuccess(sampleLeadResponse))
-            .mockResolvedValueOnce(
-                errored({code: "LEMLIST_SERVER_ERROR", detail: "enrichment unavailable"})
-            )
+    it("accepts a create response without an email", async () => {
+        mockLemlistPost.mockResolvedValue(apiSuccess({_id: "lead_123", campaignId: "cam_456"}))
 
         const result = await createLeadInCampaign({
             campaignId: "cam_456",
             person: samplePerson,
             contactOwner: null,
-            addLeadQueryParams: {
-                ...defaultAddLeadParams,
-                verifyEmail: true,
-            },
+            addLeadQueryParams: defaultAddLeadParams,
         })
 
         expect(isErrored(result)).toBe(false)
-        if (!isErrored(result)) {
-            expect(result.value._id).toBe("lead_123")
-        }
-        expect(mockLemlistPost).toHaveBeenCalledTimes(2)
     })
 })

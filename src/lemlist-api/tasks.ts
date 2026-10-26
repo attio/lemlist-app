@@ -1,9 +1,9 @@
-import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
+import {type AsyncResult, bind, errored} from "@attio/fetchable"
 import {ErrorCode, errorMessage} from "../error-codes"
 import {createLogger} from "../common/logger"
 import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
+import {parseResponse} from "./transport/error"
 import {
     type LemlistCreateTaskRequest,
     LemlistCreateTaskRequestSchema,
@@ -31,16 +31,7 @@ export async function createTask(
 
     const responseResult = await lemlistApi.post(endpoints.api.tasks, body.data)
 
-    if (isErrored(responseResult)) {
-        return responseResult
-    }
-
-    const parsed = LemlistCreateTaskResponseSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        logger.error(`Failed to parse create task response: ${parsed.error.message}`)
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data)
+    return bind(responseResult, (response) =>
+        parseResponse(LemlistCreateTaskResponseSchema, response.data)
+    )
 }

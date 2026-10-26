@@ -1,7 +1,7 @@
-import {type AsyncResult, complete, errored, isErrored} from "@attio/fetchable"
+import {type AsyncResult, bind, map} from "@attio/fetchable"
 import {type LemlistApiError, lemlistApi} from "./transport/lemlist"
 import {endpoints} from "./endpoints"
-import {schemaParseError} from "./transport/error"
+import {parseResponse} from "./transport/error"
 import {type LemlistCompany, LemlistCompanyListSchema} from "./schemas"
 
 /**
@@ -10,15 +10,7 @@ import {type LemlistCompany, LemlistCompanyListSchema} from "./schemas"
 export async function listCompanies(): AsyncResult<LemlistCompany[], LemlistApiError> {
     const responseResult = await lemlistApi.get(endpoints.api.companies, {limit: 100})
 
-    if (isErrored(responseResult)) {
-        return responseResult
-    }
-
-    const parsed = LemlistCompanyListSchema.safeParse(responseResult.value.data)
-
-    if (!parsed.success) {
-        return errored(schemaParseError(parsed.error))
-    }
-
-    return complete(parsed.data.data)
+    return bind(responseResult, (response) =>
+        map(parseResponse(LemlistCompanyListSchema, response.data), (page) => page.data)
+    )
 }

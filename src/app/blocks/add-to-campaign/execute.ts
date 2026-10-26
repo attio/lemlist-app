@@ -102,7 +102,7 @@ export default Workflows.defineWorkflowBlockExecute(block, async ({config, metad
         data: {
             lead_id: lead._id,
             campaign_id: lead.campaignId,
-            email: lead.email,
+            email: lead.email ?? person.email,
         },
     }
 })
