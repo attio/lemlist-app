@@ -66,7 +66,9 @@ describe(codeForStatus, () => {
 
     it.each([
         [400, "LEAD_ALREADY_IN_CAMPAIGN", "ALREADY_IN_CAMPAIGN"],
+        [400, "Lead already in the campaign", "ALREADY_IN_CAMPAIGN"],
         [409, "LEAD_ALREADY_IN_OTHER_CAMPAIGN", "ALREADY_IN_OTHER_CAMPAIGN"],
+        [409, "Lead already in other campaign", "ALREADY_IN_OTHER_CAMPAIGN"],
         [400, "Invalid email", "INVALID_REQUEST"],
     ] as const)("maps %i %s to %s", (status, detail, expected) => {
         expect(codeForStatus(status, detail)).toBe(expected)

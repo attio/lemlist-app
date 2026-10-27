@@ -14,7 +14,9 @@ import BulkAddToCampaignDialog, {
     type BulkAddFormValues,
 } from "../../../record/bulk-actions/add-to-campaign/bulk-add-to-campaign-dialog"
 
-const BATCH_SIZE = 50
+// Each batch adds people one by one inside a single 30s server call. Creates with enrichment
+// params on can take over half a second each, so 50 per batch could run out of time.
+const BATCH_SIZE = 20
 
 type BatchOutcome = {
     successes: number

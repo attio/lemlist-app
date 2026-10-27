@@ -19,9 +19,9 @@ export type LemlistErrorCode =
     | "UNEXPECTED_ERROR"
     /** Not a lemlist status: ask Attio to retry the block. */
     | "RETRY"
-    /** `400 LEAD_ALREADY_IN_CAMPAIGN`, from the create lead call. */
+    /** `400 LEAD_ALREADY_IN_CAMPAIGN` or "Lead already in the campaign", from the create lead call. */
     | "ALREADY_IN_CAMPAIGN"
-    /** `409 LEAD_ALREADY_IN_OTHER_CAMPAIGN`, only sent with `deduplicate`. */
+    /** `409 LEAD_ALREADY_IN_OTHER_CAMPAIGN` or "Lead already in other campaign", only sent with `deduplicate`. */
     | "ALREADY_IN_OTHER_CAMPAIGN"
 
 export type LemlistApiError = {
@@ -33,10 +33,17 @@ const logger = createLogger("lemlist API error")
 
 /** lemlist names these refusals only in the response text, so `detail` outranks the status. */
 export function codeForStatus(status: number, detail: string | null = null): LemlistErrorCode {
-    if (detail?.includes("LEAD_ALREADY_IN_OTHER_CAMPAIGN")) {
+    // lemlist documents both refusals as codes, but production sends the plain-text message.
+    if (
+        detail?.includes("LEAD_ALREADY_IN_OTHER_CAMPAIGN") ||
+        detail?.toLowerCase().includes("lead already in other campaign")
+    ) {
         return "ALREADY_IN_OTHER_CAMPAIGN"
     }
-    if (detail?.includes("LEAD_ALREADY_IN_CAMPAIGN")) {
+    if (
+        detail?.includes("LEAD_ALREADY_IN_CAMPAIGN") ||
+        detail?.toLowerCase().includes("lead already in the campaign")
+    ) {
         return "ALREADY_IN_CAMPAIGN"
     }
 
